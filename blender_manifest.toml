@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "more_colors"
-version = "1.1.0"
+version = "1.2.0"
 name = "More Colors!"
 tagline = "A set of tools to make vertex painting easier"
 maintainer = "Kai Fardreamer <tojynick@protonmail.com>"

@@ -15,7 +15,8 @@ classes = [
 
     simple_fill.MORECOLORS_OT_simple_fill,
     simple_fill.MORECOLORS_OT_select_preset_color,
-    simple_fill.MORECOLORS_OT_apply_preset_color
+    simple_fill.MORECOLORS_OT_apply_preset_color,
+    simple_fill.MORECOLORS_OT_apply_new_preset_color
 ]
 
 def register():

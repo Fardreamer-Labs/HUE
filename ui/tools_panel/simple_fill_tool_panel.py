@@ -23,32 +23,21 @@ class MORECOLORS_PT_simple_fill_tool_panel(BasePanelInfo, Panel):
 
         column = layout.column(align = True)
 
-        split = column.split()
-        row = split.row()
-        row.prop(simple_fill_tool, "preset_color_1", text = "")
-        split.operator("morecolors.select_preset_color", icon = "EYEDROPPER").preset_name = "preset_color_1"
-        split.operator("morecolors.apply_preset_color", icon = "BRUSH_DATA").preset_name = "preset_color_1"
 
-        split = column.split()
-        row = split.row()
-        row.prop(simple_fill_tool, "preset_color_2", text = "")
-        split.operator("morecolors.select_preset_color", icon = "EYEDROPPER").preset_name = "preset_color_2"
-        split.operator("morecolors.apply_preset_color", icon = "BRUSH_DATA").preset_name = "preset_color_2"
+        for i in range(1, simple_fill_tool.preset_count + 1):
+            split = column.split()
+            row = split.row()
+            row.prop(simple_fill_tool, "preset_color_" + str(i), text = "")
+            split.operator("morecolors.select_preset_color", icon = "EYEDROPPER").preset_name = "preset_color_" + str(i)
+            split.operator("morecolors.apply_preset_color", icon = "BRUSH_DATA").preset_name = "preset_color_" + str(i)
 
-        split = column.split()
-        row = split.row()
-        row.prop(simple_fill_tool, "preset_color_3", text = "")
-        split.operator("morecolors.select_preset_color", icon = "EYEDROPPER").preset_name = "preset_color_3"
-        split.operator("morecolors.apply_preset_color", icon = "BRUSH_DATA").preset_name = "preset_color_3"
-
-        split = column.split()
-        row = split.row()
-        row.prop(simple_fill_tool, "preset_color_4", text = "")
-        split.operator("morecolors.select_preset_color", icon = "EYEDROPPER").preset_name = "preset_color_4"
-        split.operator("morecolors.apply_preset_color", icon = "BRUSH_DATA").preset_name = "preset_color_4"
+        if simple_fill_tool.preset_count < simple_fill_tool.preset_max_count:
+            layout.separator()
+            row = layout.row()
+            row.prop(simple_fill_tool, "selected_color", text = "")
+            row.operator("morecolors.apply_new_preset_color", icon = "BRUSH_DATA")
 
         layout.separator()
-
         row = layout.row()
         row.prop(simple_fill_tool, "selected_color", text = "")
         row.operator("morecolors.simple_fill", icon = "BRUSH_DATA")

@@ -2,7 +2,6 @@ from ..utilities.color_utilities import get_masked_color, get_active_color_attri
 from .base_operators import BaseColorOperator
 import bpy
 
-
 class MORECOLORS_OT_simple_fill(BaseColorOperator):
     """Applies a selected color to selected object(s) or part of the mesh"""
 
@@ -120,5 +119,23 @@ class MORECOLORS_OT_apply_preset_color(BaseColorOperator):
         simple_fill_tool.selected_color = getattr(simple_fill_tool, self.preset_name)
         bpy.ops.morecolors.simple_fill()
         simple_fill_tool.selected_color = previous_selected_color
+
+        return {"FINISHED"}
+
+class MORECOLORS_OT_apply_new_preset_color(BaseColorOperator):
+    bl_label = "Add Color"
+    bl_idname = "morecolors.apply_new_preset_color"
+
+    preset_name: bpy.props.StringProperty(options = {"HIDDEN"})
+    
+
+    def execute(self, context):
+        scene = context.scene
+        simple_fill_tool = scene.more_colors_simple_fill_tool
+
+        preset_attr = f"preset_color_{simple_fill_tool.preset_count + 1}"
+        setattr(simple_fill_tool, preset_attr, simple_fill_tool.selected_color)
+        
+        setattr(simple_fill_tool, 'preset_count', simple_fill_tool.preset_count + 1)
 
         return {"FINISHED"}

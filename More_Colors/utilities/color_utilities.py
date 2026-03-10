@@ -5,6 +5,36 @@
 
 import colorsys
 import random
+from contextlib import contextmanager
+
+import bpy
+
+
+@contextmanager
+def ensure_object_mode(obj):
+    """Context manager that temporarily switches *obj* to Object mode if needed.
+
+    Usage::
+
+        with ensure_object_mode(obj):
+            # work with mesh data ...
+    """
+    was_edit = (obj.mode == "EDIT")
+    if was_edit:
+        bpy.ops.object.mode_set(mode="OBJECT")
+    try:
+        yield
+    finally:
+        if was_edit:
+            bpy.ops.object.mode_set(mode="EDIT")
+
+
+def build_vertex_loop_map(obj):
+    """Return a dict mapping vertex index to a list of loop indices in O(L)."""
+    vert_to_loops = {}
+    for loop in obj.data.loops:
+        vert_to_loops.setdefault(loop.vertex_index, []).append(loop.index)
+    return vert_to_loops
 
 
 def get_random_color_by_RGBA():

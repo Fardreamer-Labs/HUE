@@ -5,7 +5,9 @@
 
 import bpy
 
-from ..utilities.color_utilities import get_masked_color, get_active_color_attribute
+from ..utilities.color_utilities import (
+    build_vertex_loop_map, ensure_object_mode, get_masked_color, get_active_color_attribute
+)
 from .base_operators import BaseColorOperator, BaseOperator
 
 
@@ -15,10 +17,7 @@ def _apply_fill(obj, color, mask, select_mode):
 
     match color_attribute.domain:
         case "CORNER":
-            # Build vertex -> loop indices map in O(L)
-            vert_to_loops = {}
-            for loop in obj.data.loops:
-                vert_to_loops.setdefault(loop.vertex_index, []).append(loop.index)
+            vert_to_loops = build_vertex_loop_map(obj)
 
             # Point Selection
             if select_mode[0]:
@@ -72,15 +71,8 @@ def execute_simple_fill(context):
         if obj.type != "MESH":
             continue
 
-        # Mesh data API requires object mode; switch back after if needed
-        was_in_edit_mode = (obj.mode == "EDIT")
-        if was_in_edit_mode:
-            bpy.ops.object.mode_set(mode="OBJECT")
-
-        _apply_fill(obj, color, mask, select_mode)
-
-        if was_in_edit_mode:
-            bpy.ops.object.mode_set(mode="EDIT")
+        with ensure_object_mode(obj):
+            _apply_fill(obj, color, mask, select_mode)
 
     return True, "Vertex colors assigned successfully!"
 

@@ -6,7 +6,9 @@
 import bpy
 
 from .base_operators import BaseColorOperator, BaseOperator
-from ..utilities.color_utilities import get_masked_color, get_active_color_attribute
+from ..utilities.color_utilities import (
+    build_vertex_loop_map, ensure_object_mode, get_masked_color, get_active_color_attribute
+)
 
 
 class MC_OT_add_color_by_position(BaseColorOperator):
@@ -28,108 +30,76 @@ class MC_OT_add_color_by_position(BaseColorOperator):
         reverse_gradient = len(gradient_direction) > 1
 
         color_ramp = self.get_color_ramp(context)
-        if color_ramp is None:
-            self.report({"ERROR"}, "Color ramp material not found. Please initialize the tool first.")
-            return {"CANCELLED"}
         mask = global_color_settings.get_mask()
 
         for obj in context.selected_objects:
             if obj.type != "MESH":
                 continue
 
-            was_in_edit_mode = (obj.mode == "EDIT")
-            if was_in_edit_mode:
-                bpy.ops.object.mode_set(mode="OBJECT")
+            with ensure_object_mode(obj):
+                color_attribute = get_active_color_attribute(obj)
 
-            color_attribute = get_active_color_attribute(obj)
+                vertex_positions = [
+                    obj.matrix_world @ v.co if color_by_position_tool.space_type == "World" else v.co
+                    for v in obj.data.vertices
+                ]
 
-            vertex_positions = [
-                obj.matrix_world @ v.co if color_by_position_tool.space_type == "World" else v.co
-                for v in obj.data.vertices
-            ]
+                # Calculate min and max based on the axis
+                positions_along_axis = [pos[axis_index] for pos in vertex_positions]
+                min_pos = min(positions_along_axis)
+                max_pos = max(positions_along_axis)
 
-            # Calculate min and max based on the axis
-            positions_along_axis = [pos[axis_index] for pos in vertex_positions]
-            min_pos = min(positions_along_axis)
-            max_pos = max(positions_along_axis)
+                pos_range = max_pos - min_pos
+                if pos_range == 0:
+                    pos_range = 1  # Avoid division by zero; all vertices get position 0
 
-            pos_range = max_pos - min_pos
-            if pos_range == 0:
-                pos_range = 1  # Avoid division by zero; all vertices get position 0
+                match color_attribute.domain:
+                    case "CORNER":
+                        vert_to_loops = build_vertex_loop_map(obj)
 
-            match color_attribute.domain:
-                case "CORNER":
-                    # Build vertex -> loop indices map in O(L)
-                    vert_to_loops = {}
-                    for loop in obj.data.loops:
-                        vert_to_loops.setdefault(loop.vertex_index, []).append(loop.index)
+                        for vert in obj.data.vertices:
+                            pos_value = vertex_positions[vert.index][axis_index]
+                            gradient_position = (pos_value - min_pos) / pos_range
 
-                    for vert in obj.data.vertices:
-                        pos_value = vertex_positions[vert.index][axis_index]
-                        gradient_position = (pos_value - min_pos) / pos_range
+                            if reverse_gradient:
+                                gradient_position = 1 - gradient_position
 
-                        if reverse_gradient:
-                            gradient_position = 1 - gradient_position
+                            color = color_ramp.evaluate(gradient_position)
 
-                        color = color_ramp.evaluate(gradient_position)
+                            for loop_index in vert_to_loops.get(vert.index, []):
+                                data = color_attribute.data[loop_index]
+                                data.color_srgb = get_masked_color(data.color_srgb, color, mask)
 
-                        for loop_index in vert_to_loops.get(vert.index, []):
-                            data = color_attribute.data[loop_index]
+                    case "POINT":
+                        for vert in obj.data.vertices:
+                            pos_value = vertex_positions[vert.index][axis_index]
+                            gradient_position = (pos_value - min_pos) / pos_range
+
+                            if reverse_gradient:
+                                gradient_position = 1 - gradient_position
+
+                            color = color_ramp.evaluate(gradient_position)
+
+                            data = color_attribute.data[vert.index]
                             data.color_srgb = get_masked_color(data.color_srgb, color, mask)
 
-                case "POINT":
-                    for vert in obj.data.vertices:
-                        pos_value = vertex_positions[vert.index][axis_index]
-                        gradient_position = (pos_value - min_pos) / pos_range
-
-                        if reverse_gradient:
-                            gradient_position = 1 - gradient_position
-
-                        color = color_ramp.evaluate(gradient_position)
-
-                        data = color_attribute.data[vert.index]
-                        data.color_srgb = get_masked_color(data.color_srgb, color, mask)
-
-            obj.data.update()
-
-            if was_in_edit_mode:
-                bpy.ops.object.mode_set(mode="EDIT")
+                obj.data.update()
 
         self.report({"INFO"}, "Vertex colors assigned successfully!")
         return {"FINISHED"}
 
     def get_color_ramp(self, context):
         color_by_position_tool = context.scene.more_colors_color_by_position_tool
-        material = bpy.data.materials.get(color_by_position_tool.color_ramp_material_name)
-        if material is None:
-            return None
-        node = material.node_tree.nodes["Color Ramp"]
-        return node.color_ramp
-
-
-class MC_OT_initialize_color_by_position_tool(BaseOperator):
-    """Creates the internal material used to store color ramp data"""
-
-    bl_label = "Initialize Tool"
-    bl_idname = "morecolors.initialize_color_by_position_tool"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        color_by_position_tool = context.scene.more_colors_color_by_position_tool
         material_name = color_by_position_tool.color_ramp_material_name
-
         material = bpy.data.materials.get(material_name)
-
         if material is None:
             material = bpy.data.materials.new(name=material_name)
             material.use_nodes = True
             nodes = material.node_tree.nodes
             nodes.clear()
             nodes.new(type="ShaderNodeValToRGB")
-
-        color_by_position_tool.is_tool_initialized = True
-
-        return {"FINISHED"}
+        node = material.node_tree.nodes["Color Ramp"]
+        return node.color_ramp
 
 
 class MC_OT_reset_color_by_position_gradient(BaseOperator):
@@ -144,6 +114,10 @@ class MC_OT_reset_color_by_position_gradient(BaseOperator):
         material_name = color_by_position_tool.color_ramp_material_name
 
         material = bpy.data.materials.get(material_name)
+        if material is None:
+            self.report({"ERROR"}, "No gradient to reset.")
+            return {"CANCELLED"}
+
         node = material.node_tree.nodes["Color Ramp"]
         color_ramp = node.color_ramp
 

@@ -22,7 +22,6 @@ classes = [
     reset_vertex_colors.MC_OT_reset_color,
 
     add_color_by_position.MC_OT_add_color_by_position,
-    add_color_by_position.MC_OT_initialize_color_by_position_tool,
     add_color_by_position.MC_OT_reset_color_by_position_gradient,
 
     simple_fill.MC_OT_simple_fill,

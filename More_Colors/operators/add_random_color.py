@@ -3,9 +3,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import bpy
-
 from ..utilities.color_utilities import (
+    build_vertex_loop_map, ensure_object_mode,
     get_masked_color, get_random_color, get_active_color_attribute, get_distinct_random_colors
 )
 from .base_operators import BaseColorOperator
@@ -27,11 +26,7 @@ class MC_OT_add_random_color(BaseColorOperator):
                 data.color_srgb = get_masked_color(data.color_srgb, random_color, mask)
 
     def add_random_color_per_point(self, obj, color_attribute, global_color_settings, random_color_tool, palette):
-        # Build vertex -> loop indices map in O(L)
-        vert_to_loops = {}
-        for loop in obj.data.loops:
-            vert_to_loops.setdefault(loop.vertex_index, []).append(loop.index)
-
+        vert_to_loops = build_vertex_loop_map(obj)
         mask = global_color_settings.get_mask()
         for vert in obj.data.vertices:
             random_color = get_random_color(random_color_tool.color_mode, palette=palette)
@@ -116,53 +111,44 @@ class MC_OT_add_random_color(BaseColorOperator):
         mask = global_color_settings.get_mask()
 
         for obj, color in zip(mesh_objects, colors):
-            was_in_edit_mode = (obj.mode == "EDIT")
-            if was_in_edit_mode:
-                bpy.ops.object.mode_set(mode="OBJECT")
+            with ensure_object_mode(obj):
+                color_attribute = get_active_color_attribute(obj)
+                for data in color_attribute.data:
+                    data.color_srgb = get_masked_color(data.color_srgb, color, mask)
 
-            color_attribute = get_active_color_attribute(obj)
-            for data in color_attribute.data:
-                data.color_srgb = get_masked_color(data.color_srgb, color, mask)
-
-            obj.data.update()
-
-            if was_in_edit_mode:
-                bpy.ops.object.mode_set(mode="EDIT")
+                obj.data.update()
 
     def _apply_per_element(self, mesh_objects, global_color_settings, random_color_tool, palette):
         for obj in mesh_objects:
-            was_in_edit_mode = (obj.mode == "EDIT")
-            if was_in_edit_mode:
-                bpy.ops.object.mode_set(mode="OBJECT")
+            with ensure_object_mode(obj):
+                self._color_single_object(obj, global_color_settings, random_color_tool, palette)
 
-            color_attribute = get_active_color_attribute(obj)
+    def _color_single_object(self, obj, global_color_settings, random_color_tool, palette):
+        color_attribute = get_active_color_attribute(obj)
 
-            match color_attribute.domain:
-                # On point domain color is stored per point, not per corner,
-                # so element_type selection doesn't apply
-                case "POINT":
-                    mask = global_color_settings.get_mask()
-                    for p in obj.data.vertices:
-                        data = color_attribute.data[p.index]
-                        random_color = get_random_color(random_color_tool.color_mode, palette=palette)
-                        data.color_srgb = get_masked_color(data.color_srgb, random_color, mask)
+        match color_attribute.domain:
+            # On point domain color is stored per point, not per corner,
+            # so element_type selection doesn't apply
+            case "POINT":
+                mask = global_color_settings.get_mask()
+                for p in obj.data.vertices:
+                    data = color_attribute.data[p.index]
+                    random_color = get_random_color(random_color_tool.color_mode, palette=palette)
+                    data.color_srgb = get_masked_color(data.color_srgb, random_color, mask)
 
-                case "CORNER":
-                    match random_color_tool.element_type:
-                        case "Point":
-                            self.add_random_color_per_point(
-                                obj, color_attribute, global_color_settings, random_color_tool, palette)
-                        case "Vertex":
-                            self.add_random_color_per_vertex(
-                                color_attribute, global_color_settings, random_color_tool, palette)
-                        case "Face":
-                            self.add_random_color_per_face(
-                                obj, color_attribute, global_color_settings, random_color_tool, palette)
-                        case "Island":
-                            self.add_random_color_per_island(
-                                obj, color_attribute, global_color_settings, random_color_tool, palette)
+            case "CORNER":
+                match random_color_tool.element_type:
+                    case "Point":
+                        self.add_random_color_per_point(
+                            obj, color_attribute, global_color_settings, random_color_tool, palette)
+                    case "Vertex":
+                        self.add_random_color_per_vertex(
+                            color_attribute, global_color_settings, random_color_tool, palette)
+                    case "Face":
+                        self.add_random_color_per_face(
+                            obj, color_attribute, global_color_settings, random_color_tool, palette)
+                    case "Island":
+                        self.add_random_color_per_island(
+                            obj, color_attribute, global_color_settings, random_color_tool, palette)
 
-            obj.data.update()
-
-            if was_in_edit_mode:
-                bpy.ops.object.mode_set(mode="EDIT")
+        obj.data.update()

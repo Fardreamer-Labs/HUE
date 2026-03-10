@@ -3,9 +3,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import bpy
-
-from ..utilities.color_utilities import get_active_color_attribute
+from ..utilities.color_utilities import ensure_object_mode, get_active_color_attribute
 from .base_operators import BaseColorOperator
 
 
@@ -21,19 +19,13 @@ class MC_OT_reset_color(BaseColorOperator):
             if obj.type != "MESH":
                 continue
 
-            was_in_edit_mode = (obj.mode == "EDIT")
-            if was_in_edit_mode:
-                bpy.ops.object.mode_set(mode="OBJECT")
+            with ensure_object_mode(obj):
+                color_attribute = get_active_color_attribute(obj)
 
-            color_attribute = get_active_color_attribute(obj)
+                for data in color_attribute.data:
+                    data.color_srgb = (1, 1, 1, 1)
 
-            for data in color_attribute.data:
-                data.color_srgb = (1, 1, 1, 1)
-
-            obj.data.update()
-
-            if was_in_edit_mode:
-                bpy.ops.object.mode_set(mode="EDIT")
+                obj.data.update()
 
         self.report({"INFO"}, "Vertex colors have been reset!")
         return {"FINISHED"}

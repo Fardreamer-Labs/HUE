@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from bpy.props import BoolProperty, EnumProperty, StringProperty
+from bpy.props import EnumProperty, StringProperty
 from bpy.types import PropertyGroup
 
 
@@ -35,9 +35,4 @@ class ColorByPositionToolProperties(PropertyGroup):
     color_ramp_material_name: StringProperty(
         name="Color Ramp Material Name",
         default="MORECOLORS_ColorByPositionRamp",
-    )
-
-    is_tool_initialized: BoolProperty(
-        name="Is Tool Initialized",
-        default=False,
     )

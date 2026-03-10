@@ -88,7 +88,7 @@ def execute_simple_fill(context):
 class MC_OT_simple_fill(BaseColorOperator):
     """Applies a selected color to selected object(s) or part of the mesh"""
 
-    bl_label = "Apply"
+    bl_label = "Apply Color"
     bl_idname = "morecolors.simple_fill"
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -101,38 +101,68 @@ class MC_OT_simple_fill(BaseColorOperator):
         return {"FINISHED"}
 
 
-class MC_OT_select_preset_color(BaseOperator):
-    """Selects the preset's color"""
+class MC_OT_add_preset_color(BaseOperator):
+    """Saves the current active color as a new color preset"""
 
-    bl_label = "Select"
-    bl_idname = "morecolors.select_preset_color"
-
-    preset_name: bpy.props.StringProperty(options={"HIDDEN"})
+    bl_label = "Add Preset Color"
+    bl_idname = "morecolors.add_preset_color"
+    bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         simple_fill_tool = context.scene.more_colors_simple_fill_tool
-        simple_fill_tool.selected_color = getattr(simple_fill_tool, self.preset_name)
-
+        palette = simple_fill_tool.preset_palette
+        if not palette:
+            palette = bpy.data.palettes.get("MORECOLORS_SimpleFillPresets")
+            if not palette:
+                palette = bpy.data.palettes.new("MORECOLORS_SimpleFillPresets")
+            simple_fill_tool.preset_palette = palette
+        color = simple_fill_tool.selected_color
+        new_color = palette.colors.new()
+        new_color.color = (color[0], color[1], color[2])
+        simple_fill_tool.active_preset_index = len(palette.colors) - 1
         return {"FINISHED"}
 
 
-class MC_OT_apply_preset_color(BaseColorOperator):
-    """Applies the preset color to selected object(s) or part of the mesh"""
+class MC_OT_remove_preset_color(BaseOperator):
+    """Removes the currently selected color preset"""
 
-    bl_label = "Quick Apply"
-    bl_idname = "morecolors.apply_preset_color"
+    bl_label = "Remove Preset Color"
+    bl_idname = "morecolors.remove_preset_color"
     bl_options = {'REGISTER', 'UNDO'}
-
-    preset_name: bpy.props.StringProperty(options={"HIDDEN"})
 
     def execute(self, context):
         simple_fill_tool = context.scene.more_colors_simple_fill_tool
+        palette = simple_fill_tool.preset_palette
+        if not palette or len(palette.colors) == 0:
+            self.report({"WARNING"}, "No preset colors to remove")
+            return {"CANCELLED"}
+        idx = simple_fill_tool.active_preset_index
+        idx = min(idx, len(palette.colors) - 1)
+        palette.colors.remove(palette.colors[idx])
+        if len(palette.colors) > 0:
+            simple_fill_tool.active_preset_index = min(idx, len(palette.colors) - 1)
+        else:
+            simple_fill_tool.active_preset_index = 0
+        return {"FINISHED"}
 
-        # Copy the color data, instead of creating a reference
-        previous_selected_color = list(simple_fill_tool.selected_color)
 
-        simple_fill_tool.selected_color = getattr(simple_fill_tool, self.preset_name)
-        execute_simple_fill(context)
-        simple_fill_tool.selected_color = previous_selected_color
+class MC_OT_use_preset_color(BaseOperator):
+    """Selects this preset and sets it as the active color"""
 
+    bl_label = "Use Preset Color"
+    bl_idname = "morecolors.use_preset_color"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        simple_fill_tool = context.scene.more_colors_simple_fill_tool
+        palette = simple_fill_tool.preset_palette
+        if not palette or self.index >= len(palette.colors):
+            return {"CANCELLED"}
+        color = palette.colors[self.index].color
+        simple_fill_tool.selected_color[0] = color[0]
+        simple_fill_tool.selected_color[1] = color[1]
+        simple_fill_tool.selected_color[2] = color[2]
+        simple_fill_tool.active_preset_index = self.index
         return {"FINISHED"}

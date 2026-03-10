@@ -26,8 +26,9 @@ classes = [
     add_color_by_position.MC_OT_reset_color_by_position_gradient,
 
     simple_fill.MC_OT_simple_fill,
-    simple_fill.MC_OT_select_preset_color,
-    simple_fill.MC_OT_apply_preset_color,
+    simple_fill.MC_OT_add_preset_color,
+    simple_fill.MC_OT_remove_preset_color,
+    simple_fill.MC_OT_use_preset_color,
 ]
 
 

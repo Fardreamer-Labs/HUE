@@ -40,3 +40,4 @@ def register():
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
+    simple_fill_tool_panel.cleanup_preset_previews()

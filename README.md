@@ -1,45 +1,28 @@
 <img alt="Addon banner" src="./resources/banner.png"/>
 
-# 🖌️ More Colors!
+# Blender Add-on: More Colors!
 
 A simple Blender add-on that makes working with vertex colors easier.
 
-## ✨ Features
+## Features
 
-- 👁️ **Preview vertex colors (including alpha!)** from object and edit modes
-- 🖌️ Various tools, including **simple selection fill**, **random color generator**, and a **gradient generator**
-- 🎨 Supports editing different **color attributes**
-- 🎭 **RGBA color masking**, modify only the channels you need
+- **Preview vertex colors (including alpha!)** from object and edit modes
+- Various tools, including **simple selection fill**, **random color generator**, and a **gradient generator**
+- Supports editing different **color attributes**
+- **RGBA color masking**, modify only the channels you need
 
 
-## ✅ Prerequisites
+## Prerequisites
 
 - [Blender 4.2 or higher](https://www.blender.org/download/)
 
-## 🔧 Installation
-
-There are two ways to install the add-on: **via Blender's extensions** or **manually**. Let's take a look at each option.
-
-### Manual Installation
-
-1. Download the latest version of the package
-2. Inside Blender go to **Edit** -> **Preferences** -> **Get Extensions**
-3. Click on the down arrow at the top right corner
-
-   <img alt="Installation step 4 screenshot" src="./resources/documentation/manual_installation_step_4.png" width=550>
-
-4. Press **"Install from Disk..."**
-5. Selected the **downloaded package**
-6. Enjoy ✨
-
-### Installation Via Blender's Extensions
+## Installation Via Blender's Extensions
 
 1. Inside Blender go to **Edit** -> **Preferences** -> **Get Extensions**
 2. In the search box type **"More Colors!"**
 3. Click **"Install"**
-4. You're awesome ✨
 
-## 🚀 Getting Started
+## Getting Started
 
 After installing the add-on, you can see it on the side panel (press **N** to open it). It should look something like this: <img alt="Addon overview screenshot" src="./resources/documentation/overview.png" width=550>
 
@@ -73,7 +56,7 @@ A reset colors button just **sets all vertex colors to white**.
 #### Color Attributes Settings
 In this panel, you can select, **which color attribute will be affected by the tool**. If your object has no color attributes, the plugin **will create one automatically** for you!
 
-## 🪛 Tools
+## Tools
 
 Contains all the tools the add-on has to offer. At the moment it has a **Simple Fill**, a **Random Color Per Element**, and a **Color By Position** tool.
 
@@ -117,7 +100,7 @@ Also, you can choose, how colors will be generated. There are three modes: **RGB
 
 Generates a **gradient**, based on **vertex position** along a selected direction. You can choose between generating a gradient in the **object's local space** _(rotation affects the direction of the gradient)_ or in **world space** _(object rotation doesn't affect the gradient direction)_.
 
-## ⚠️ Known Issues
+## Known Issues
 ### Alpha vertex display mode
 Since Blender doesn't have a built-in feature to display the alpha channel of vertex colors, I had to use a special material for that. When you enable alpha display mode, this material temporarily overrides all active object materials. If you have different materials assigned to various parts of your geometry, alpha display mode will reassign them, so be careful with that.
 
@@ -128,10 +111,13 @@ Color attributes might have two domains: vertex and face corner. The vertex doma
 
 Still, the plugin supports vertex domain, but some tools will be limited, for instance, you will lose the ability to choose the element random colors will be applied.
 
-## 📃 License
+## License
 
 Licensed under GNU General Public License, Version 3.0, [LICENSE](LICENSE) or https://www.gnu.org/licenses/gpl-3.0.en.html
 
-## ❤️ Gratitude
+## Copyright and Credits
 
-Some ideas are inspired by [Ethan Simon-Law](https://github.com/oRazeD)`s [Vertex Color Plus](https://github.com/oRazeD/VertexColorsPlus/tree/stable) addon, check it out as well!
+- Copyright (c) 2024 Kai Fardreamer. All rights reserved.
+- Originally developed by Kai Fardreamer <tojynick@protonmail.com>, the repository was archived Jul 30, 2025 and picked up for maintenance by Clonephaze March 02, 2026.
+
+- Some ideas are inspired by [Ethan Simon-Law](https://github.com/oRazeD)`s [Vertex Color Plus](https://github.com/oRazeD/VertexColorsPlus/tree/stable) addon, check it out as well!

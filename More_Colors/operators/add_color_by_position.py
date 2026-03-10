@@ -32,11 +32,18 @@ class MC_OT_add_color_by_position(BaseColorOperator):
         reverse_gradient = len(gradient_direction) > 1
 
         color_ramp = self.get_color_ramp(context)
+        if color_ramp is None:
+            self.report({"ERROR"}, "Color ramp material not found. Please initialize the tool first.")
+            return {"CANCELLED"}
         mask = global_color_settings.get_mask()
 
         for obj in context.selected_objects:
             if obj.type != "MESH":
                 continue
+
+            was_in_edit_mode = (obj.mode == "EDIT")
+            if was_in_edit_mode:
+                bpy.ops.object.mode_set(mode="OBJECT")
 
             color_attribute = get_active_color_attribute(obj)
 
@@ -89,12 +96,17 @@ class MC_OT_add_color_by_position(BaseColorOperator):
 
             obj.data.update()
 
+            if was_in_edit_mode:
+                bpy.ops.object.mode_set(mode="EDIT")
+
         self.report({"INFO"}, "Vertex colors assigned successfully!")
         return {"FINISHED"}
 
     def get_color_ramp(self, context):
         color_by_position_tool = context.scene.more_colors_color_by_position_tool
         material = bpy.data.materials.get(color_by_position_tool.color_ramp_material_name)
+        if material is None:
+            return None
         node = material.node_tree.nodes["Color Ramp"]
         return node.color_ramp
 

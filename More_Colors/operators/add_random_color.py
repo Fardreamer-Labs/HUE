@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import bpy
+
 from ..utilities.color_utilities import get_masked_color, get_random_color, get_active_color_attribute
 from .base_operators import BaseColorOperator
 
@@ -13,12 +15,6 @@ class MC_OT_add_random_color(BaseColorOperator):
     bl_label = "Add Random Color"
     bl_idname = "morecolors.add_random_color"
     bl_options = {'REGISTER', 'UNDO'}
-
-    @classmethod
-    def poll(cls, context):
-        if not super().poll(context):
-            return False
-        return context.object and context.object.mode == "OBJECT"
 
     def add_random_color_per_face(self, obj, color_attribute, global_color_settings, random_color_tool):
         mask = global_color_settings.get_mask()
@@ -98,6 +94,10 @@ class MC_OT_add_random_color(BaseColorOperator):
             if obj.type != "MESH":
                 continue
 
+            was_in_edit_mode = (obj.mode == "EDIT")
+            if was_in_edit_mode:
+                bpy.ops.object.mode_set(mode="OBJECT")
+
             color_attribute = get_active_color_attribute(obj)
             mask = global_color_settings.get_mask()
 
@@ -126,6 +126,9 @@ class MC_OT_add_random_color(BaseColorOperator):
                                 obj, color_attribute, global_color_settings, random_color_tool)
 
             obj.data.update()
+
+            if was_in_edit_mode:
+                bpy.ops.object.mode_set(mode="EDIT")
 
         self.report({"INFO"}, "Random vertex color applied!")
         return {"FINISHED"}

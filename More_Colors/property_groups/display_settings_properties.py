@@ -3,14 +3,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import bpy
-
 from bpy.props import EnumProperty, StringProperty
 from bpy.types import PropertyGroup
 
 
 def on_settings_update(self, context):
-    bpy.ops.morecolors.display_vertex_colors()
+    if hasattr(context, 'space_data') and context.space_data and hasattr(context.space_data, 'shading'):
+        from ..operators.display_vertex_colors import update_display
+        update_display(context)
 
 
 class DisplaySettingsProperties(PropertyGroup):

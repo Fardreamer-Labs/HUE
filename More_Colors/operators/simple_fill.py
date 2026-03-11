@@ -6,62 +6,22 @@
 import bpy
 
 from ..utilities.color_utilities import (
-    build_vertex_loop_map, ensure_object_mode, get_masked_color, get_active_color_attribute
+    apply_mask_constant, bulk_get_colors, bulk_set_colors,
+    ensure_object_mode, get_active_color_attribute, get_selected_color_indices,
 )
 from .base_operators import BaseColorOperator, BaseOperator
 
 
 def _apply_fill(obj, color, mask, select_mode):
-    """Apply color fill using the mesh data API (requires object mode).
+    """Apply color fill using numpy bulk operations (requires object mode).
 
     When *select_mode* is ``None`` (object mode), all elements are colored.
     """
     color_attribute = get_active_color_attribute(obj)
-
-    # Object-mode fast path: color everything
-    if select_mode is None:
-        for data in color_attribute.data:
-            data.color_srgb = get_masked_color(data.color_srgb, color, mask)
-        obj.data.update()
-        return
-
-    match color_attribute.domain:
-        case "CORNER":
-            vert_to_loops = build_vertex_loop_map(obj)
-
-            # Point Selection
-            if select_mode[0]:
-                for vert in obj.data.vertices:
-                    if vert.select:
-                        for loop_index in vert_to_loops.get(vert.index, []):
-                            data = color_attribute.data[loop_index]
-                            data.color_srgb = get_masked_color(data.color_srgb, color, mask)
-
-            # Edge Selection
-            if select_mode[1]:
-                for edge in obj.data.edges:
-                    if edge.select:
-                        for vert_index in edge.vertices:
-                            for loop_index in vert_to_loops.get(vert_index, []):
-                                data = color_attribute.data[loop_index]
-                                data.color_srgb = get_masked_color(data.color_srgb, color, mask)
-
-            # Face Selection
-            if select_mode[2]:
-                for poly in obj.data.polygons:
-                    if poly.select:
-                        for loop_index in poly.loop_indices:
-                            data = color_attribute.data[loop_index]
-                            data.color_srgb = get_masked_color(data.color_srgb, color, mask)
-
-        # Since "point" domain stores colors only for vertices, we can
-        # modify their color directly without worrying about selection mode
-        case "POINT":
-            for p in obj.data.vertices:
-                if p.select:
-                    data = color_attribute.data[p.index]
-                    data.color_srgb = get_masked_color(data.color_srgb, color, mask)
-
+    indices = get_selected_color_indices(obj, select_mode, color_attribute.domain)
+    colors = bulk_get_colors(color_attribute)
+    apply_mask_constant(colors, color, mask, indices)
+    bulk_set_colors(color_attribute, colors)
     obj.data.update()
 
 

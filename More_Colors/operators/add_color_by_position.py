@@ -6,12 +6,14 @@
 from random import Random
 
 import bpy
+import numpy as np
 from mathutils import Vector
 from mathutils.noise import fractal as noise_fractal
 
 from .base_operators import BaseColorOperator, BaseOperator
 from ..utilities.color_utilities import (
-    build_vertex_loop_map, ensure_object_mode, get_masked_color, get_active_color_attribute
+    apply_mask_array, bulk_get_colors, bulk_set_colors,
+    ensure_object_mode, get_active_color_attribute, get_selected_color_indices,
 )
 
 
@@ -62,18 +64,29 @@ class MC_OT_add_color_by_position(BaseColorOperator):
 
     # ---- Per-source value computation ----
 
+    @staticmethod
+    def _get_coords(obj, use_world):
+        """Fetch vertex coordinates as (V, 3) numpy array, optionally in world space."""
+        n = len(obj.data.vertices)
+        coords = np.empty(n * 3, dtype=np.float64)
+        obj.data.vertices.foreach_get("co", coords)
+        coords = coords.reshape(n, 3)
+        if use_world:
+            mat = np.array(obj.matrix_world, dtype=np.float64)
+            ones = np.ones((n, 1), dtype=np.float64)
+            coords = np.hstack([coords, ones]) @ mat.T
+            coords = coords[:, :3]
+        return coords
+
     def _position_values(self, obj, tool):
         axis_index = {"X": 0, "Y": 1, "Z": 2}[tool.gradient_direction[-1]]
         reverse = len(tool.gradient_direction) > 1
         use_world = (tool.space_type == "World")
 
-        raw = [
-            (obj.matrix_world @ v.co if use_world else v.co)[axis_index]
-            for v in obj.data.vertices
-        ]
-        values = self._normalize(raw)
+        coords = self._get_coords(obj, use_world)
+        values = self._normalize_np(coords[:, axis_index])
         if reverse:
-            values = [1.0 - v for v in values]
+            values = 1.0 - values
         return values
 
     def _distance_values(self, obj, tool, context):
@@ -87,12 +100,11 @@ class MC_OT_add_color_by_position(BaseColorOperator):
 
         use_world = (tool.space_type == "World")
         origin = origin_world if use_world else obj.matrix_world.inverted() @ origin_world
+        origin_np = np.array(origin, dtype=np.float64)
 
-        raw = [
-            ((obj.matrix_world @ v.co if use_world else v.co) - origin).length
-            for v in obj.data.vertices
-        ]
-        return self._normalize(raw)
+        coords = self._get_coords(obj, use_world)
+        distances = np.linalg.norm(coords - origin_np, axis=1)
+        return self._normalize_np(distances)
 
     def _noise_values(self, obj, tool):
         rng = Random(tool.noise_seed)
@@ -105,131 +117,109 @@ class MC_OT_add_color_by_position(BaseColorOperator):
         octaves = tool.noise_detail + 1
         use_world = (tool.space_type == "World")
 
-        raw = [
-            noise_fractal(
-                (obj.matrix_world @ v.co if use_world else v.co) * scale + offset,
-                1.0, 2.0, octaves
-            )
-            for v in obj.data.vertices
-        ]
-        return self._normalize(raw)
+        coords = self._get_coords(obj, use_world)
+        n = len(coords)
+        raw = np.empty(n, dtype=np.float64)
+        for i in range(n):
+            raw[i] = noise_fractal(Vector(coords[i]) * scale + offset, 1.0, 2.0, octaves)
+        return self._normalize_np(raw)
 
     @staticmethod
     def _curvature_values(obj):
         mesh = obj.data
-        num_verts = len(mesh.vertices)
+        n = len(mesh.vertices)
 
-        # Build adjacency: vertex -> neighbor vertex indices
-        neighbors = [[] for _ in range(num_verts)]
-        for edge in mesh.edges:
-            v0, v1 = edge.vertices
-            neighbors[v0].append(v1)
-            neighbors[v1].append(v0)
+        coords = np.empty(n * 3, dtype=np.float64)
+        mesh.vertices.foreach_get("co", coords)
+        coords = coords.reshape(n, 3)
 
-        raw = []
-        for v in mesh.vertices:
-            if not neighbors[v.index]:
-                raw.append(0.0)
-                continue
-            avg = Vector((0, 0, 0))
-            for ni in neighbors[v.index]:
-                avg += mesh.vertices[ni].co
-            avg /= len(neighbors[v.index])
-            # Laplacian dot normal: positive = concave, negative = convex
-            raw.append((avg - v.co).dot(v.normal))
+        normals = np.empty(n * 3, dtype=np.float64)
+        mesh.vertices.foreach_get("normal", normals)
+        normals = normals.reshape(n, 3)
 
-        return MC_OT_add_color_by_position._normalize(raw)
+        # Vectorized neighbor accumulation via edge data
+        n_edges = len(mesh.edges)
+        edge_verts = np.empty(n_edges * 2, dtype=np.int32)
+        mesh.edges.foreach_get("vertices", edge_verts)
+        v0 = edge_verts[0::2]
+        v1 = edge_verts[1::2]
+
+        neighbor_sum = np.zeros((n, 3), dtype=np.float64)
+        neighbor_count = np.zeros(n, dtype=np.float64)
+        np.add.at(neighbor_sum, v0, coords[v1])
+        np.add.at(neighbor_sum, v1, coords[v0])
+        np.add.at(neighbor_count, v0, 1)
+        np.add.at(neighbor_count, v1, 1)
+
+        has_neighbors = neighbor_count > 0
+        avg = np.zeros_like(coords)
+        avg[has_neighbors] = neighbor_sum[has_neighbors] / neighbor_count[has_neighbors, np.newaxis]
+
+        # Laplacian dot normal: positive = concave, negative = convex
+        raw = np.sum((avg - coords) * normals, axis=1)
+        raw[~has_neighbors] = 0.0
+        return MC_OT_add_color_by_position._normalize_np(raw)
 
     @staticmethod
     def _weight_values(obj):
         group = obj.vertex_groups.active
         if group is None:
             return None
-        values = []
+        n = len(obj.data.vertices)
+        values = np.zeros(n, dtype=np.float64)
         for v in obj.data.vertices:
             try:
-                values.append(group.weight(v.index))
+                values[v.index] = group.weight(v.index)
             except RuntimeError:
-                values.append(0.0)
+                pass
         return values
 
     # ---- Shared helpers ----
 
     @staticmethod
-    def _normalize(raw):
+    def _normalize_np(values):
         """Normalize values to 0–1 range via min-max scaling."""
-        if not raw:
-            return []
-        min_val = min(raw)
-        max_val = max(raw)
+        if len(values) == 0:
+            return values
+        min_val = values.min()
+        max_val = values.max()
         val_range = max_val - min_val
         if val_range == 0:
-            return [0.0] * len(raw)
-        return [(v - min_val) / val_range for v in raw]
+            return np.zeros_like(values)
+        return (values - min_val) / val_range
 
     @staticmethod
     def _apply_gradient(obj, values, color_ramp, mask, select_mode):
         color_attribute = get_active_color_attribute(obj)
+        indices = get_selected_color_indices(obj, select_mode, color_attribute.domain)
+        colors = bulk_get_colors(color_attribute)
 
-        # Object-mode fast path: apply to all elements
-        if select_mode is None:
-            match color_attribute.domain:
-                case "CORNER":
-                    vert_to_loops = build_vertex_loop_map(obj)
-                    for vert in obj.data.vertices:
-                        color = color_ramp.evaluate(values[vert.index])
-                        for loop_index in vert_to_loops.get(vert.index, []):
-                            data = color_attribute.data[loop_index]
-                            data.color_srgb = get_masked_color(data.color_srgb, color, mask)
-                case "POINT":
-                    for vert in obj.data.vertices:
-                        color = color_ramp.evaluate(values[vert.index])
-                        data = color_attribute.data[vert.index]
-                        data.color_srgb = get_masked_color(data.color_srgb, color, mask)
-            obj.data.update()
-            return
+        if color_attribute.domain == "CORNER":
+            n_loops = len(obj.data.loops)
+            loop_verts = np.empty(n_loops, dtype=np.int32)
+            obj.data.loops.foreach_get("vertex_index", loop_verts)
 
-        # Edit-mode: respect selection
-        match color_attribute.domain:
-            case "CORNER":
-                vert_to_loops = build_vertex_loop_map(obj)
+            target_loops = np.arange(n_loops, dtype=np.intp) if indices is None else indices
 
-                if select_mode[0]:  # Vertex
-                    for vert in obj.data.vertices:
-                        if not vert.select:
-                            continue
-                        color = color_ramp.evaluate(values[vert.index])
-                        for loop_index in vert_to_loops.get(vert.index, []):
-                            data = color_attribute.data[loop_index]
-                            data.color_srgb = get_masked_color(data.color_srgb, color, mask)
+            # Evaluate color ramp only for unique vertices used by target loops
+            unique_verts, inverse = np.unique(loop_verts[target_loops], return_inverse=True)
+            ramp_colors = np.array(
+                [color_ramp.evaluate(float(values[vi])) for vi in unique_verts],
+                dtype=np.float32,
+            )
+            new_colors = ramp_colors[inverse]
+            apply_mask_array(colors, new_colors, mask, target_loops)
 
-                if select_mode[1]:  # Edge
-                    for edge in obj.data.edges:
-                        if not edge.select:
-                            continue
-                        for vi in edge.vertices:
-                            color = color_ramp.evaluate(values[vi])
-                            for loop_index in vert_to_loops.get(vi, []):
-                                data = color_attribute.data[loop_index]
-                                data.color_srgb = get_masked_color(data.color_srgb, color, mask)
+        elif color_attribute.domain == "POINT":
+            n_verts = len(obj.data.vertices)
+            target_verts = np.arange(n_verts, dtype=np.intp) if indices is None else indices
+            new_colors = np.array(
+                [color_ramp.evaluate(float(values[vi])) for vi in target_verts],
+                dtype=np.float32,
+            )
+            apply_mask_array(colors, new_colors, mask, target_verts)
 
-                if select_mode[2]:  # Face
-                    for poly in obj.data.polygons:
-                        if not poly.select:
-                            continue
-                        for loop_index in poly.loop_indices:
-                            vi = obj.data.loops[loop_index].vertex_index
-                            color = color_ramp.evaluate(values[vi])
-                            data = color_attribute.data[loop_index]
-                            data.color_srgb = get_masked_color(data.color_srgb, color, mask)
-
-            case "POINT":
-                for vert in obj.data.vertices:
-                    if not vert.select:
-                        continue
-                    color = color_ramp.evaluate(values[vert.index])
-                    data = color_attribute.data[vert.index]
-                    data.color_srgb = get_masked_color(data.color_srgb, color, mask)
+        bulk_set_colors(color_attribute, colors)
         obj.data.update()
 
     def _get_color_ramp(self, context):

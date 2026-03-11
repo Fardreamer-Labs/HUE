@@ -8,6 +8,7 @@ import random
 from contextlib import contextmanager
 
 import bpy
+import numpy as np
 
 
 @contextmanager
@@ -129,3 +130,83 @@ def get_distinct_random_colors(count, mode="RGBA", palette=None, min_distance=0.
                 best_min_dist = min_dist
         colors.append(best_color)
     return colors
+
+
+# ---- Numpy bulk I/O ----
+
+def bulk_get_colors(color_attribute):
+    """Fetch all sRGB colors as a (N, 4) float32 numpy array."""
+    n = len(color_attribute.data)
+    flat = np.empty(n * 4, dtype=np.float32)
+    color_attribute.data.foreach_get("color_srgb", flat)
+    return flat.reshape(n, 4)
+
+
+def bulk_set_colors(color_attribute, colors):
+    """Write a (N, 4) float32 numpy array back to color data."""
+    color_attribute.data.foreach_set("color_srgb", colors.ravel())
+
+
+# ---- Numpy mask helpers ----
+
+def apply_mask_constant(colors, color, mask, indices=None):
+    """Set constant *color* on rows of *colors*, honoring per-channel *mask*.
+
+    *indices*: optional int array — when ``None``, all rows are updated.
+    """
+    for ch in range(4):
+        if mask[ch]:
+            if indices is not None:
+                colors[indices, ch] = color[ch]
+            else:
+                colors[:, ch] = color[ch]
+
+
+def apply_mask_array(colors, new_colors, mask, indices=None):
+    """Set per-element *new_colors* on *colors*, honoring per-channel *mask*.
+
+    *new_colors*: shape ``(len(indices), 4)`` or ``(N, 4)``.
+    *indices*: optional int array — when ``None``, all rows are updated.
+    """
+    for ch in range(4):
+        if mask[ch]:
+            if indices is not None:
+                colors[indices, ch] = new_colors[:, ch]
+            else:
+                colors[:, ch] = new_colors[:, ch]
+
+
+# ---- Selection helpers ----
+
+def get_selected_color_indices(obj, select_mode, domain):
+    """Return indices into ``color_attribute.data`` for selected elements.
+
+    For CORNER domain returns loop indices; for POINT returns vertex indices.
+    Returns ``None`` when *select_mode* is ``None`` (object mode — all elements).
+    """
+    if select_mode is None:
+        return None
+
+    if domain == "POINT":
+        return np.array(
+            [v.index for v in obj.data.vertices if v.select], dtype=np.intp
+        )
+
+    # CORNER domain
+    indices = set()
+    if select_mode[0] or select_mode[1]:
+        vert_to_loops = build_vertex_loop_map(obj)
+    if select_mode[0]:
+        for vert in obj.data.vertices:
+            if vert.select:
+                indices.update(vert_to_loops.get(vert.index, []))
+    if select_mode[1]:
+        for edge in obj.data.edges:
+            if edge.select:
+                for vi in edge.vertices:
+                    indices.update(vert_to_loops.get(vi, []))
+    if select_mode[2]:
+        for poly in obj.data.polygons:
+            if poly.select:
+                indices.update(poly.loop_indices)
+    return np.array(sorted(indices), dtype=np.intp) if indices else np.array([], dtype=np.intp)

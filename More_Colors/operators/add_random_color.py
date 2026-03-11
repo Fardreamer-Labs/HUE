@@ -3,32 +3,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import numpy as np
+
 from ..utilities.color_utilities import (
-    build_vertex_loop_map, ensure_object_mode,
-    get_masked_color, get_random_color, get_active_color_attribute, get_distinct_random_colors
+    apply_mask_constant, build_vertex_loop_map, bulk_get_colors, bulk_set_colors,
+    ensure_object_mode, get_active_color_attribute, get_distinct_random_colors,
+    get_random_color, get_selected_color_indices,
 )
 from .base_operators import BaseColorOperator
-
-
-def _build_selected_loops(obj, select_mode):
-    """Build set of selected loop indices based on current selection mode."""
-    selected = set()
-    if select_mode[0]:  # Vertex
-        vert_to_loops = build_vertex_loop_map(obj)
-        for vert in obj.data.vertices:
-            if vert.select:
-                selected.update(vert_to_loops.get(vert.index, []))
-    if select_mode[1]:  # Edge
-        vert_to_loops = build_vertex_loop_map(obj)
-        for edge in obj.data.edges:
-            if edge.select:
-                for vi in edge.vertices:
-                    selected.update(vert_to_loops.get(vi, []))
-    if select_mode[2]:  # Face
-        for poly in obj.data.polygons:
-            if poly.select:
-                selected.update(poly.loop_indices)
-    return selected
 
 
 class MC_OT_add_random_color(BaseColorOperator):
@@ -41,38 +23,41 @@ class MC_OT_add_random_color(BaseColorOperator):
     def add_random_color_per_face(self, obj, color_attribute, global_color_settings, random_color_tool,
                                   palette, selected_only=True):
         mask = global_color_settings.get_mask()
+        colors = bulk_get_colors(color_attribute)
         for poly in obj.data.polygons:
             if selected_only and not poly.select:
                 continue
-            random_color = get_random_color(random_color_tool.color_mode, palette=palette)
-            for loop_index in poly.loop_indices:
-                data = color_attribute.data[loop_index]
-                data.color_srgb = get_masked_color(data.color_srgb, random_color, mask)
+            rc = get_random_color(random_color_tool.color_mode, palette=palette)
+            loop_arr = np.arange(poly.loop_start, poly.loop_start + poly.loop_total, dtype=np.intp)
+            apply_mask_constant(colors, rc, mask, loop_arr)
+        bulk_set_colors(color_attribute, colors)
 
     def add_random_color_per_point(self, obj, color_attribute, global_color_settings, random_color_tool,
                                    palette, selected_only=True):
         vert_to_loops = build_vertex_loop_map(obj)
         mask = global_color_settings.get_mask()
+        colors = bulk_get_colors(color_attribute)
         for vert in obj.data.vertices:
             if selected_only and not vert.select:
                 continue
-            random_color = get_random_color(random_color_tool.color_mode, palette=palette)
-            for loop_index in vert_to_loops.get(vert.index, []):
-                data = color_attribute.data[loop_index]
-                data.color_srgb = get_masked_color(data.color_srgb, random_color, mask)
+            rc = get_random_color(random_color_tool.color_mode, palette=palette)
+            loops = vert_to_loops.get(vert.index, [])
+            if loops:
+                apply_mask_constant(colors, rc, mask, np.array(loops, dtype=np.intp))
+        bulk_set_colors(color_attribute, colors)
 
     def add_random_color_per_vertex(self, obj, color_attribute, global_color_settings,
                                     random_color_tool, palette, select_mode):
         mask = global_color_settings.get_mask()
-        if select_mode is not None:
-            selected_loops = _build_selected_loops(obj, select_mode)
-        else:
-            selected_loops = None
-        for idx, data in enumerate(color_attribute.data):
-            if selected_loops is not None and idx not in selected_loops:
-                continue
-            random_color = get_random_color(random_color_tool.color_mode, palette=palette)
-            data.color_srgb = get_masked_color(data.color_srgb, random_color, mask)
+        colors = bulk_get_colors(color_attribute)
+        indices = get_selected_color_indices(obj, select_mode, "CORNER")
+        target = np.arange(len(colors), dtype=np.intp) if indices is None else indices
+        for li in target:
+            rc = get_random_color(random_color_tool.color_mode, palette=palette)
+            for ch in range(4):
+                if mask[ch]:
+                    colors[li, ch] = rc[ch]
+        bulk_set_colors(color_attribute, colors)
 
     def add_random_color_per_island(self, obj, color_attribute, global_color_settings, random_color_tool,
                                     palette, selected_only=True):
@@ -114,17 +99,19 @@ class MC_OT_add_random_color(BaseColorOperator):
                     adjacency_list[face_list[j]].append(face_list[i])
 
         mask = global_color_settings.get_mask()
+        colors = bulk_get_colors(color_attribute)
         visited_faces = set()
         for face_index in candidate_faces:
             if face_index not in visited_faces:
                 connected_faces = get_connected_faces(face_index, visited_faces, adjacency_list)
-                random_color = get_random_color(random_color_tool.color_mode, palette=palette)
+                rc = get_random_color(random_color_tool.color_mode, palette=palette)
 
-                for connected_face_index in connected_faces:
-                    poly = obj.data.polygons[connected_face_index]
-                    for loop_index in poly.loop_indices:
-                        data = color_attribute.data[loop_index]
-                        data.color_srgb = get_masked_color(data.color_srgb, random_color, mask)
+                island_loops = []
+                for cfi in connected_faces:
+                    poly = obj.data.polygons[cfi]
+                    island_loops.extend(poly.loop_indices)
+                apply_mask_constant(colors, rc, mask, np.array(island_loops, dtype=np.intp))
+        bulk_set_colors(color_attribute, colors)
 
     def add_random_color_per_face_set(self, obj, color_attribute, global_color_settings, random_color_tool,
                                       palette, selected_only=True):
@@ -141,13 +128,15 @@ class MC_OT_add_random_color(BaseColorOperator):
             face_sets.setdefault(fs_id, []).append(i)
 
         mask = global_color_settings.get_mask()
+        colors = bulk_get_colors(color_attribute)
         for face_indices in face_sets.values():
-            random_color = get_random_color(random_color_tool.color_mode, palette=palette)
+            rc = get_random_color(random_color_tool.color_mode, palette=palette)
+            set_loops = []
             for fi in face_indices:
                 poly = obj.data.polygons[fi]
-                for loop_index in poly.loop_indices:
-                    data = color_attribute.data[loop_index]
-                    data.color_srgb = get_masked_color(data.color_srgb, random_color, mask)
+                set_loops.extend(poly.loop_indices)
+            apply_mask_constant(colors, rc, mask, np.array(set_loops, dtype=np.intp))
+        bulk_set_colors(color_attribute, colors)
         return True
 
     def execute(self, context):
@@ -175,17 +164,17 @@ class MC_OT_add_random_color(BaseColorOperator):
         return {"FINISHED"}
 
     def _apply_per_object(self, mesh_objects, global_color_settings, random_color_tool, palette):
-        colors = get_distinct_random_colors(
+        distinct = get_distinct_random_colors(
             len(mesh_objects), random_color_tool.color_mode, palette=palette
         )
         mask = global_color_settings.get_mask()
 
-        for obj, color in zip(mesh_objects, colors):
+        for obj, color in zip(mesh_objects, distinct):
             with ensure_object_mode(obj):
                 color_attribute = get_active_color_attribute(obj)
-                for data in color_attribute.data:
-                    data.color_srgb = get_masked_color(data.color_srgb, color, mask)
-
+                colors = bulk_get_colors(color_attribute)
+                apply_mask_constant(colors, color, mask)
+                bulk_set_colors(color_attribute, colors)
                 obj.data.update()
 
     def _apply_per_element(self, mesh_objects, global_color_settings, random_color_tool,
@@ -201,16 +190,17 @@ class MC_OT_add_random_color(BaseColorOperator):
         selected_only = select_mode is not None
 
         match color_attribute.domain:
-            # On point domain color is stored per point, not per corner,
-            # so element_type selection doesn't apply
             case "POINT":
                 mask = global_color_settings.get_mask()
-                for p in obj.data.vertices:
-                    if selected_only and not p.select:
-                        continue
-                    data = color_attribute.data[p.index]
-                    random_color = get_random_color(random_color_tool.color_mode, palette=palette)
-                    data.color_srgb = get_masked_color(data.color_srgb, random_color, mask)
+                colors = bulk_get_colors(color_attribute)
+                indices = get_selected_color_indices(obj, select_mode, "POINT")
+                target = np.arange(len(colors), dtype=np.intp) if indices is None else indices
+                for vi in target:
+                    rc = get_random_color(random_color_tool.color_mode, palette=palette)
+                    for ch in range(4):
+                        if mask[ch]:
+                            colors[vi, ch] = rc[ch]
+                bulk_set_colors(color_attribute, colors)
 
             case "CORNER":
                 match random_color_tool.element_type:
@@ -269,8 +259,9 @@ class MC_OT_add_random_color_by_object(BaseColorOperator):
         for obj, color in zip(mesh_objects, colors):
             with ensure_object_mode(obj):
                 color_attribute = get_active_color_attribute(obj)
-                for data in color_attribute.data:
-                    data.color_srgb = get_masked_color(data.color_srgb, color, mask)
+                all_colors = bulk_get_colors(color_attribute)
+                apply_mask_constant(all_colors, color, mask)
+                bulk_set_colors(color_attribute, all_colors)
                 obj.data.update()
 
         self.report({"INFO"}, "Random color per object applied!")

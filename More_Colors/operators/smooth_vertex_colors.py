@@ -2,8 +2,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import numpy as np
+
 from ..utilities.color_utilities import (
-    build_vertex_loop_map, ensure_object_mode, get_active_color_attribute
+    apply_mask_array, bulk_get_colors, bulk_set_colors,
+    ensure_object_mode, get_active_color_attribute,
 )
 from .base_operators import BaseColorOperator
 
@@ -33,73 +36,59 @@ class MC_OT_smooth_vertex_colors(BaseColorOperator):
         mesh = obj.data
         color_attribute = get_active_color_attribute(obj)
         num_verts = len(mesh.vertices)
+        all_colors = bulk_get_colors(color_attribute)
 
-        # Build vertex adjacency from edges
-        neighbors = [[] for _ in range(num_verts)]
-        for edge in mesh.edges:
-            v0, v1 = edge.vertices
-            neighbors[v0].append(v1)
-            neighbors[v1].append(v0)
+        # Build edge pair arrays for vectorized neighbor accumulation
+        n_edges = len(mesh.edges)
+        edge_verts = np.empty(n_edges * 2, dtype=np.int32)
+        mesh.edges.foreach_get("vertices", edge_verts)
+        v0 = edge_verts[0::2]
+        v1 = edge_verts[1::2]
 
-        # Read current per-vertex colors depending on domain
-        match color_attribute.domain:
-            case "CORNER":
-                vert_to_loops = build_vertex_loop_map(obj)
-                # Average all loop colors per vertex to get one color per vert
-                colors = []
-                for vi in range(num_verts):
-                    loops = vert_to_loops.get(vi, [])
-                    if loops:
-                        r = sum(color_attribute.data[li].color_srgb[0] for li in loops) / len(loops)
-                        g = sum(color_attribute.data[li].color_srgb[1] for li in loops) / len(loops)
-                        b = sum(color_attribute.data[li].color_srgb[2] for li in loops) / len(loops)
-                        a = sum(color_attribute.data[li].color_srgb[3] for li in loops) / len(loops)
-                        colors.append([r, g, b, a])
-                    else:
-                        colors.append([0.0, 0.0, 0.0, 1.0])
-            case "POINT":
-                vert_to_loops = None
-                colors = [list(color_attribute.data[vi].color_srgb) for vi in range(num_verts)]
+        # Compute per-vertex neighbor counts (constant across iterations)
+        neighbor_count = np.zeros(num_verts, dtype=np.float32)
+        np.add.at(neighbor_count, v0, 1)
+        np.add.at(neighbor_count, v1, 1)
+        has_neighbors = neighbor_count > 0
 
-        # Iterative smoothing
+        # Read per-vertex colors from domain
+        if color_attribute.domain == "CORNER":
+            n_loops = len(mesh.loops)
+            loop_verts = np.empty(n_loops, dtype=np.int32)
+            mesh.loops.foreach_get("vertex_index", loop_verts)
+
+            # Average loop colors per vertex using add.at
+            vert_colors = np.zeros((num_verts, 4), dtype=np.float32)
+            loop_count = np.zeros(num_verts, dtype=np.float32)
+            np.add.at(vert_colors, loop_verts, all_colors)
+            np.add.at(loop_count, loop_verts, 1)
+            loop_count = np.maximum(loop_count, 1)
+            vert_colors /= loop_count[:, np.newaxis]
+        else:
+            loop_verts = None
+            vert_colors = all_colors.copy()
+
+        # Vectorized iterative smoothing
         for _ in range(iterations):
-            new_colors = []
-            for vi in range(num_verts):
-                nbs = neighbors[vi]
-                if not nbs:
-                    new_colors.append(colors[vi][:])
-                    continue
-                # Average neighbor colors
-                avg = [0.0, 0.0, 0.0, 0.0]
-                for ni in nbs:
-                    for ch in range(4):
-                        avg[ch] += colors[ni][ch]
-                for ch in range(4):
-                    avg[ch] /= len(nbs)
-                # Lerp original toward average by factor
-                blended = [
-                    colors[vi][ch] + (avg[ch] - colors[vi][ch]) * factor
-                    for ch in range(4)
-                ]
-                new_colors.append(blended)
-            colors = new_colors
+            neighbor_sum = np.zeros((num_verts, 4), dtype=np.float32)
+            np.add.at(neighbor_sum, v0, vert_colors[v1])
+            np.add.at(neighbor_sum, v1, vert_colors[v0])
+
+            avg = np.zeros_like(vert_colors)
+            avg[has_neighbors] = neighbor_sum[has_neighbors] / neighbor_count[has_neighbors, np.newaxis]
+
+            vert_colors = np.where(
+                has_neighbors[:, np.newaxis],
+                vert_colors + (avg - vert_colors) * factor,
+                vert_colors,
+            )
 
         # Write back with mask
-        match color_attribute.domain:
-            case "CORNER":
-                for vi in range(num_verts):
-                    for li in vert_to_loops.get(vi, []):
-                        old = color_attribute.data[li].color_srgb
-                        color_attribute.data[li].color_srgb = [
-                            colors[vi][ch] if mask[ch] else old[ch]
-                            for ch in range(4)
-                        ]
-            case "POINT":
-                for vi in range(num_verts):
-                    old = color_attribute.data[vi].color_srgb
-                    color_attribute.data[vi].color_srgb = [
-                        colors[vi][ch] if mask[ch] else old[ch]
-                        for ch in range(4)
-                    ]
+        if color_attribute.domain == "CORNER":
+            new_loop_colors = vert_colors[loop_verts]
+            apply_mask_array(all_colors, new_loop_colors, mask)
+        else:
+            apply_mask_array(all_colors, vert_colors, mask)
 
+        bulk_set_colors(color_attribute, all_colors)
         obj.data.update()

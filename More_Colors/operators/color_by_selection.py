@@ -2,8 +2,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import numpy as np
+
 from ..utilities.color_utilities import (
-    build_vertex_loop_map, ensure_object_mode, get_active_color_attribute, get_masked_color,
+    apply_mask_constant, bulk_get_colors, bulk_set_colors,
+    ensure_object_mode, get_active_color_attribute, get_selected_color_indices,
 )
 from .base_operators import BaseColorOperator
 
@@ -34,50 +37,16 @@ class MC_OT_color_by_selection(BaseColorOperator):
     @staticmethod
     def _apply(obj, sel_color, unsel_color, mask, select_mode):
         color_attribute = get_active_color_attribute(obj)
+        # Face mode takes priority (matches original behavior)
+        effective_mode = (False, False, True) if select_mode[2] else select_mode
+        selected = get_selected_color_indices(obj, effective_mode, color_attribute.domain)
 
-        match color_attribute.domain:
-            case "CORNER":
-                vert_to_loops = build_vertex_loop_map(obj)
+        colors = bulk_get_colors(color_attribute)
+        n = len(colors)
+        unselected = np.setdiff1d(np.arange(n, dtype=np.intp), selected)
 
-                # Build set of selected vertex indices based on select mode
-                selected_verts = set()
-                if select_mode[0]:  # Vertex
-                    for vert in obj.data.vertices:
-                        if vert.select:
-                            selected_verts.add(vert.index)
-                if select_mode[1]:  # Edge
-                    for edge in obj.data.edges:
-                        if edge.select:
-                            selected_verts.update(edge.vertices)
-                if select_mode[2]:  # Face
-                    for poly in obj.data.polygons:
-                        if poly.select:
-                            for li in poly.loop_indices:
-                                data = color_attribute.data[li]
-                                data.color_srgb = get_masked_color(data.color_srgb, sel_color, mask)
-                            # Face mode: mark remaining loops as unselected below
-                    # In face mode, handle unselected faces
-                    if select_mode[2]:
-                        for poly in obj.data.polygons:
-                            if not poly.select:
-                                for li in poly.loop_indices:
-                                    data = color_attribute.data[li]
-                                    data.color_srgb = get_masked_color(data.color_srgb, unsel_color, mask)
-                        obj.data.update()
-                        return
+        apply_mask_constant(colors, sel_color, mask, selected)
+        apply_mask_constant(colors, unsel_color, mask, unselected)
 
-                # Vertex/Edge mode: apply per-vertex
-                if select_mode[0] or select_mode[1]:
-                    for vi in range(len(obj.data.vertices)):
-                        color = sel_color if vi in selected_verts else unsel_color
-                        for li in vert_to_loops.get(vi, []):
-                            data = color_attribute.data[li]
-                            data.color_srgb = get_masked_color(data.color_srgb, color, mask)
-
-            case "POINT":
-                for vert in obj.data.vertices:
-                    color = sel_color if vert.select else unsel_color
-                    data = color_attribute.data[vert.index]
-                    data.color_srgb = get_masked_color(data.color_srgb, color, mask)
-
+        bulk_set_colors(color_attribute, colors)
         obj.data.update()

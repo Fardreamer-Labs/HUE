@@ -11,6 +11,7 @@ from ..base_panel_info import BasePanelInfo
 class MC_PT_tools_panel(BasePanelInfo, Panel):
     bl_label = "Tools"
     bl_idname = "MC_PT_tools_panel"
+    bl_order = 0
 
     def draw(self, context):
-        pass
+        self.layout.operator("morecolors.open_documentation", icon="HELP")

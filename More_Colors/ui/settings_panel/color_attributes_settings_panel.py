@@ -9,47 +9,43 @@ from ..base_panel_info import BasePanelInfo
 
 
 class MC_PT_color_attributes_settings_panel(BasePanelInfo, Panel):
-    bl_label = "Color Attributes Settings"
+    bl_label = "Color Attributes"
     bl_idname = "MC_PT_color_attributes_settings_panel"
     bl_parent_id = "MC_PT_settings_panel"
     bl_order = 2
 
     def draw(self, context):
         layout = self.layout
+        obj = context.active_object
 
-        if len(context.selected_objects) > 1:
-            row = layout.row()
-            row.label(
-                text="Two or more objects selected, color attributes settings support only one object!",
-                icon="ERROR")
+        has_single_mesh = (
+            len(context.selected_objects) == 1
+            and obj is not None
+            and obj.type == "MESH"
+        )
 
-        elif len(context.selected_objects) == 0:
-            row = layout.row()
-            row.label(text="No objects selected, select something!", icon="ERROR")
+        if not has_single_mesh:
+            layout.label(text="Select a single mesh object.", icon="INFO")
+            return
 
-        elif context.active_object.type != "MESH":
-            row = layout.row()
-            row.label(text="Selected object is not a mesh!", icon="ERROR")
+        mesh = obj.data
+        row = layout.row()
 
-        else:
-            mesh = context.active_object.data
-            row = layout.row()
+        col = row.column()
+        col.template_list(
+            "MESH_UL_color_attributes",
+            "color_attributes",
+            mesh,
+            "color_attributes",
+            mesh.color_attributes,
+            "active_color_index",
+            rows=3,
+        )
 
-            col = row.column()
-            col.template_list(
-                "MESH_UL_color_attributes",
-                "color_attributes",
-                mesh,
-                "color_attributes",
-                mesh.color_attributes,
-                "active_color_index",
-                rows=3,
-            )
+        col = row.column(align=True)
+        col.operator("geometry.color_attribute_add", icon='ADD', text="")
+        col.operator("geometry.color_attribute_remove", icon='REMOVE', text="")
 
-            col = row.column(align=True)
-            col.operator("geometry.color_attribute_add", icon='ADD', text="")
-            col.operator("geometry.color_attribute_remove", icon='REMOVE', text="")
+        col.separator()
 
-            col.separator()
-
-            col.menu("MESH_MT_color_attribute_context_menu", icon='DOWNARROW_HLT', text="")
+        col.menu("MESH_MT_color_attribute_context_menu", icon='DOWNARROW_HLT', text="")

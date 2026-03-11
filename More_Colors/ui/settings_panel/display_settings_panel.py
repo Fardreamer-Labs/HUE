@@ -9,7 +9,7 @@ from ..base_panel_info import BasePanelInfo
 
 
 class MC_PT_display_settings_panel(BasePanelInfo, Panel):
-    bl_label = "Display Settings"
+    bl_label = "Viewport Display"
     bl_idname = "MC_PT_display_settings_panel"
     bl_parent_id = "MC_PT_settings_panel"
     bl_order = 0
@@ -18,33 +18,12 @@ class MC_PT_display_settings_panel(BasePanelInfo, Panel):
         layout = self.layout
         display_settings = context.scene.more_colors_display_settings
 
-        if context.object and context.object.type == "MESH":
-            if context.object.mode != "VERTEX_PAINT":
-                row = layout.row()
-                row.label(text="Vertex colors display mode:", icon="MESH_DATA")
+        obj = context.object
+        has_mesh = obj is not None and obj.type == "MESH" and obj.mode != "VERTEX_PAINT"
 
-                row = layout.row()
-                row.prop(display_settings, "display_mode", expand=True)
+        col = layout.column()
+        col.enabled = has_mesh
+        col.prop(display_settings, "display_mode", expand=True)
 
-                row = layout.row()
-                row.label(
-                    text="Alpha display mode will temporary override the active object's materials!",
-                    icon="ERROR")
-
-                row = layout.row()
-                row.label(
-                    text="Don't forget to re-enable alpha display mode if you've selected"
-                    " a different object or color attribute.",
-                    icon="INFO")
-
-            else:
-                row = layout.row()
-                row.label(text="Enter object mode!", icon="ERROR")
-
-        elif context.object:
-            row = layout.row()
-            row.label(text="Active object is not mesh!", icon="ERROR")
-
-        else:
-            row = layout.row()
-            row.label(text="No active object!", icon="ERROR")
+        if has_mesh and display_settings.display_mode == "Alpha":
+            layout.label(text="Alpha mode overrides active object materials.", icon="INFO")

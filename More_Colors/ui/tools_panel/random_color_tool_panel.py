@@ -9,7 +9,7 @@ from ..base_panel_info import BasePanelInfo
 
 
 class MC_PT_random_color_tool_panel(BasePanelInfo, Panel):
-    bl_label = "Random Color Per Element"
+    bl_label = "Randomize"
     bl_idname = "MC_PT_random_color_tool_panel"
     bl_parent_id = "MC_PT_tools_panel"
     bl_options = {"DEFAULT_CLOSED"}
@@ -33,19 +33,13 @@ class MC_PT_random_color_tool_panel(BasePanelInfo, Panel):
 
         if show_element_type:
             row = layout.row()
-            row.label(text="Applies a random vertex color per selected element.")
-
-            row = layout.row()
             row.prop(random_color_tool, "element_type")
 
         else:
             row = layout.row()
-            row.label(text="Applies a random vertex color per each point.")
-
-            row = layout.row()
             row.label(
-                text="If you want to select the element you're applying a random color to,"
-                " select a color attribute with a \"Face Corner\" domain!",
+                text="Active color attribute uses Point domain."
+                " Switch to Face Corner domain to choose element type.",
                 icon="INFO")
 
         row = layout.row()

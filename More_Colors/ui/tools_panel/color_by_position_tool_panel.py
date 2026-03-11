@@ -10,7 +10,7 @@ from ..base_panel_info import BasePanelInfo
 
 
 class MC_PT_color_by_position_tool_panel(BasePanelInfo, Panel):
-    bl_label = "Color By Position"
+    bl_label = "Gradient"
     bl_idname = "MC_PT_color_by_position_tool_panel"
     bl_parent_id = "MC_PT_tools_panel"
     bl_options = {"DEFAULT_CLOSED"}
@@ -18,28 +18,50 @@ class MC_PT_color_by_position_tool_panel(BasePanelInfo, Panel):
 
     def draw(self, context):
         layout = self.layout
+        tool = context.scene.more_colors_color_by_position_tool
 
-        color_by_position_tool = context.scene.more_colors_color_by_position_tool
+        layout.prop(tool, "gradient_source")
 
-        row = layout.row()
-        row.label(text="Applies a position-based vertex color.")
+        match tool.gradient_source:
+            case "POSITION":
+                row = layout.row()
+                row.label(text="Space:")
+                row.prop(tool, "space_type", expand=True)
+                layout.prop(tool, "gradient_direction")
 
-        row = layout.row()
-        row.label(text="Space Type:")
-        row.prop(color_by_position_tool, "space_type", expand=True)
+            case "DISTANCE":
+                row = layout.row()
+                row.label(text="Space:")
+                row.prop(tool, "space_type", expand=True)
+                layout.prop(tool, "distance_origin")
 
-        row = layout.row()
-        row.prop(color_by_position_tool, "gradient_direction")
+            case "NOISE":
+                row = layout.row()
+                row.label(text="Space:")
+                row.prop(tool, "space_type", expand=True)
+                layout.prop(tool, "noise_scale")
+                layout.prop(tool, "noise_detail")
+                layout.prop(tool, "noise_seed")
 
-        material = bpy.data.materials.get(color_by_position_tool.color_ramp_material_name)
+            case "CURVATURE":
+                pass
+
+            case "WEIGHT":
+                obj = context.active_object
+                if obj and obj.type == "MESH" and obj.vertex_groups.active:
+                    layout.label(
+                        text=f"Group: {obj.vertex_groups.active.name}",
+                        icon="GROUP_VERTEX",
+                    )
+                else:
+                    layout.label(text="No active vertex group.", icon="INFO")
+
+        material = bpy.data.materials.get(tool.color_ramp_material_name)
         if material is not None:
             node = material.node_tree.nodes['Color Ramp']
             layout.template_color_ramp(node, "color_ramp")
 
-        layout.row()
+        layout.separator()
 
-        row = layout.row()
-        row.operator("morecolors.add_color_by_position", icon="BRUSH_DATA")
-
-        row = layout.row()
-        row.operator("morecolors.reset_color_by_position_gradient", icon="TRASH")
+        layout.operator("morecolors.add_color_by_position", icon="BRUSH_DATA")
+        layout.operator("morecolors.reset_color_by_position_gradient", icon="TRASH")

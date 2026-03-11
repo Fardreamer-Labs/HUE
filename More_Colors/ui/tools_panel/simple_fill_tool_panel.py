@@ -80,10 +80,9 @@ def cleanup_preset_previews():
 
 
 class MC_PT_simple_fill_tool_panel(BasePanelInfo, Panel):
-    bl_label = "Simple Fill"
+    bl_label = "Fill"
     bl_idname = "MC_PT_simple_fill_tool_panel"
     bl_parent_id = "MC_PT_tools_panel"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_order = 0
 
     def draw(self, context):

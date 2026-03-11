@@ -20,15 +20,18 @@ from .tools_panel import (
 )
 
 classes = [
-    about_panel.MC_PT_about_panel,
+    # Parent panels first (children reference these via bl_parent_id)
+    tools_panel.MC_PT_tools_panel,
+    simple_fill_tool_panel.MC_PT_simple_fill_tool_panel,
+    random_color_tool_panel.MC_PT_random_color_tool_panel,
+    color_by_position_tool_panel.MC_PT_color_by_position_tool_panel,
+
     settings_panel.MC_PT_settings_panel,
     display_settings_panel.MC_PT_display_settings_panel,
-    color_attributes_settings_panel.MC_PT_color_attributes_settings_panel,
-    tools_panel.MC_PT_tools_panel,
-    random_color_tool_panel.MC_PT_random_color_tool_panel,
     global_color_settings_panel.MC_PT_global_color_settings_panel,
-    color_by_position_tool_panel.MC_PT_color_by_position_tool_panel,
-    simple_fill_tool_panel.MC_PT_simple_fill_tool_panel,
+    color_attributes_settings_panel.MC_PT_color_attributes_settings_panel,
+
+    about_panel.MC_PT_about_panel,
 ]
 
 

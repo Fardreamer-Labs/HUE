@@ -9,7 +9,7 @@ from ..base_panel_info import BasePanelInfo
 
 
 class MC_PT_global_color_settings_panel(BasePanelInfo, Panel):
-    bl_label = "Global Color Settings"
+    bl_label = "Color Mask"
     bl_idname = "MC_PT_global_color_settings_panel"
     bl_parent_id = "MC_PT_settings_panel"
     bl_order = 1
@@ -18,12 +18,8 @@ class MC_PT_global_color_settings_panel(BasePanelInfo, Panel):
         layout = self.layout
         tool = context.scene.more_colors_global_color_settings
 
-        # Global Color Mask
         row = layout.row()
-        row.label(text="Color Mask", icon="COLOR")
-
-        row = layout.row()
-        row.label(text="Affected color channels:")
+        row.label(text="Affected channels:", icon="COLOR")
 
         row = layout.row(align=True)
         row.prop(tool, "global_color_mask_r", text="R", toggle=True)

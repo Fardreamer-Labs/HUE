@@ -21,15 +21,14 @@ def _get_version():
 class MC_PT_about_panel(BasePanelInfo, Panel):
     bl_label = "About"
     bl_idname = "MC_PT_about_panel"
+    bl_order = 99
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
         layout = self.layout
 
-        row = layout.row(align=True)
-        row.label(text=f"More Colors! v{_get_version()}")
+        layout.label(text=f"More Colors! v{_get_version()}")
 
-        row = layout.row()
-        row.label(text="Made with love by Kai Fardreamer", icon="FUND")
-
-        row = layout.row()
-        row.operator("morecolors.open_documentation", icon="HELP")
+        col = layout.column(align=True)
+        col.label(text="Created by Kai Fardreamer", icon="FUND")
+        col.label(text="Maintained by Clonephaze", icon="FUND")

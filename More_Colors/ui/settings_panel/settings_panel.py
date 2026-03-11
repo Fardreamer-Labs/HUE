@@ -11,6 +11,7 @@ from ..base_panel_info import BasePanelInfo
 class MC_PT_settings_panel(BasePanelInfo, Panel):
     bl_label = "Settings"
     bl_idname = "MC_PT_settings_panel"
+    bl_order = 1
 
     def draw(self, context):
         pass

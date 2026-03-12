@@ -13,6 +13,7 @@ from .settings_panel import (
     settings_panel,
 )
 from .tools_panel import (
+    attribute_transfer_tool_panel,
     color_adjustments_tool_panel,
     color_by_position_tool_panel,
     color_by_selection_tool_panel,
@@ -31,6 +32,7 @@ classes = [
     smooth_tool_panel.MC_PT_smooth_tool_panel,
     color_by_selection_tool_panel.MC_PT_color_by_selection_tool_panel,
     color_adjustments_tool_panel.MC_PT_color_adjustments_tool_panel,
+    attribute_transfer_tool_panel.MC_PT_attribute_transfer_tool_panel,
 
     settings_panel.MC_PT_settings_panel,
     display_settings_panel.MC_PT_display_settings_panel,

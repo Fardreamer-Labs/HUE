@@ -47,6 +47,15 @@ class MC_PT_color_adjustments_tool_panel(BasePanelInfo, Panel):
             case "POSTERIZE":
                 layout.prop(tool, "posterize_levels")
 
+            case "BLEND":
+                layout.prop_search(
+                    tool, "blend_layer",
+                    context.active_object.data, "color_attributes",
+                    text="Layer",
+                )
+                layout.prop(tool, "blend_mode")
+                layout.prop(tool, "blend_factor", slider=True)
+
         layout.separator()
 
         layout.operator("morecolors.color_adjustments", icon="BRUSH_DATA")

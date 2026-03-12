@@ -61,13 +61,9 @@ class TestValenceValues(unittest.TestCase):
         faces = [(0, 1, 2), (0, 2, 3)]
         self.obj = _create_mesh_object("ValenceTest", verts, faces)
 
-    def test_returns_values(self):
-        values = MC_OT_add_color_by_position._valence_values(self.obj)
-        self.assertEqual(len(values), 4)
-        self.assertTrue(np.all(np.isfinite(values)))
-
     def test_normalized_range(self):
         values = MC_OT_add_color_by_position._valence_values(self.obj)
+        self.assertEqual(len(values), 4)
         self.assertAlmostEqual(float(values.min()), 0.0, places=5)
         self.assertAlmostEqual(float(values.max()), 1.0, places=5)
 
@@ -92,12 +88,9 @@ class TestFaceAreaValues(unittest.TestCase):
         faces = [(0, 1, 2, 3), (4, 5, 6, 7)]
         self.obj = _create_mesh_object("FaceAreaTest", verts, faces)
 
-    def test_returns_values(self):
-        values = MC_OT_add_color_by_position._face_area_values(self.obj)
-        self.assertEqual(len(values), 8)
-
     def test_normalized_range(self):
         values = MC_OT_add_color_by_position._face_area_values(self.obj)
+        self.assertEqual(len(values), 8)
         self.assertAlmostEqual(float(values.min()), 0.0, places=5)
         self.assertAlmostEqual(float(values.max()), 1.0, places=5)
 
@@ -108,20 +101,14 @@ class TestFaceAreaValues(unittest.TestCase):
 class TestEdgeLengthVarianceValues(unittest.TestCase):
     def setUp(self):
         _cleanup()
-        # Regular quad (all edges equal) + stretched quad
         verts = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
         faces = [(0, 1, 2, 3)]
         self.obj = _create_mesh_object("EdgeVarTest", verts, faces)
 
-    def test_returns_values(self):
+    def test_finite_values(self):
+        """A unit quad should produce finite variance values."""
         values = MC_OT_add_color_by_position._edge_length_variance_values(self.obj)
         self.assertEqual(len(values), 4)
-
-    def test_regular_quad_low_variance(self):
-        """A unit quad has edges of length 1 → near-zero variance for corner verts."""
-        values = MC_OT_add_color_by_position._edge_length_variance_values(self.obj)
-        # Corner verts: two edges of length 1 each → variance ≈ 0
-        # But diagonals introduce some edge length difference
         self.assertTrue(np.all(np.isfinite(values)))
 
     def tearDown(self):
@@ -129,46 +116,72 @@ class TestEdgeLengthVarianceValues(unittest.TestCase):
 
 
 class TestFaceQualityValues(unittest.TestCase):
-    def setUp(self):
+    def test_equilateral_uniform(self):
+        """Single equilateral triangle — all vertices get the same quality."""
         _cleanup()
-        # Equilateral-ish triangle
         verts = [(0, 0, 0), (1, 0, 0), (0.5, 0.866, 0)]
         faces = [(0, 1, 2)]
-        self.obj = _create_mesh_object("QualityTest", verts, faces)
-
-    def test_returns_values(self):
-        values = MC_OT_add_color_by_position._face_quality_values(self.obj)
+        obj = _create_mesh_object("QualityTest", verts, faces)
+        values = MC_OT_add_color_by_position._face_quality_values(obj)
         self.assertEqual(len(values), 3)
-
-    def test_equilateral_high_quality(self):
-        """An equilateral triangle should have high (near-1) quality."""
-        values = MC_OT_add_color_by_position._face_quality_values(self.obj)
-        # Single face → all vertices same → normalized to 0 (constant → range=0)
-        # With a single face, all values should be the same.
         self.assertAlmostEqual(float(values[0]), float(values[1]), places=5)
-
-    def tearDown(self):
         _cleanup()
 
-
-class TestFaceQualityTwoFaces(unittest.TestCase):
-    def setUp(self):
+    def test_equilateral_higher_than_degenerate(self):
+        """Equilateral triangle scores higher quality than a nearly-flat one."""
         _cleanup()
-        # One equilateral + one degenerate triangle
         verts = [
             (0, 0, 0), (1, 0, 0), (0.5, 0.866, 0),  # equilateral
             (2, 0, 0), (3, 0, 0), (2.5, 0.01, 0),     # very flat
         ]
         faces = [(0, 1, 2), (3, 4, 5)]
-        self.obj = _create_mesh_object("QualityTest2", verts, faces)
+        obj = _create_mesh_object("QualityTest2", verts, faces)
+        values = MC_OT_add_color_by_position._face_quality_values(obj)
+        self.assertGreater(float(np.mean(values[:3])), float(np.mean(values[3:])))
+        _cleanup()
 
-    def test_equilateral_higher_than_degenerate(self):
-        values = MC_OT_add_color_by_position._face_quality_values(self.obj)
-        equilateral_avg = np.mean(values[:3])
-        degenerate_avg = np.mean(values[3:])
-        self.assertGreater(float(equilateral_avg), float(degenerate_avg))
 
-    def tearDown(self):
+class TestCotangentCurvatureValues(unittest.TestCase):
+    def test_sphere_normalized_range(self):
+        """UV sphere has varied curvature; result should span [0, 1]."""
+        _cleanup()
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=8, ring_count=4)
+        obj = bpy.context.active_object
+        values = MC_OT_add_color_by_position._cotangent_curvature_values(obj)
+        self.assertEqual(len(values), len(obj.data.vertices))
+        self.assertTrue(np.all(np.isfinite(values)))
+        self.assertAlmostEqual(float(values.min()), 0.0, places=5)
+        self.assertAlmostEqual(float(values.max()), 1.0, places=5)
+        _cleanup()
+
+    def test_sphere_poles_differ_from_equator(self):
+        """Poles of a UV sphere have different curvature than the equator."""
+        _cleanup()
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=8, ring_count=4)
+        obj = bpy.context.active_object
+        values = MC_OT_add_color_by_position._cotangent_curvature_values(obj)
+        unique_vals = np.unique(np.round(values, decimals=3))
+        self.assertGreater(len(unique_vals), 1)
+        _cleanup()
+
+    def test_flat_grid_finite(self):
+        """Flat grid should produce all-finite curvature values."""
+        _cleanup()
+        bpy.ops.mesh.primitive_grid_add(x_subdivisions=4, y_subdivisions=4)
+        obj = bpy.context.active_object
+        values = MC_OT_add_color_by_position._cotangent_curvature_values(obj)
+        self.assertTrue(np.all(np.isfinite(values)))
+        _cleanup()
+
+    def test_v_shape_triangle_mesh(self):
+        """Two triangles in a V shape — non-flat, 4 vertices."""
+        _cleanup()
+        verts = [(0, 0, 0), (1, 0, 0), (0.5, 1, 0.5), (0.5, 1, -0.5)]
+        faces = [(0, 1, 2), (0, 1, 3)]
+        obj = _create_mesh_object("CotTri", verts, faces)
+        values = MC_OT_add_color_by_position._cotangent_curvature_values(obj)
+        self.assertEqual(len(values), 4)
+        self.assertTrue(np.all(np.isfinite(values)))
         _cleanup()
 
 

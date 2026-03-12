@@ -24,6 +24,7 @@ _SHORTCUT_OPERATORS = [
     ("Reset Vertex Colors", "morecolors.reset_vertex_colors"),
     ("Color By Selection", "morecolors.color_by_selection"),
     ("Color Adjustments", "morecolors.color_adjustments"),
+    ("Attribute Transfer", "morecolors.attribute_transfer"),
 ]
 
 
@@ -140,6 +141,13 @@ _ADJUSTMENT_OP_ITEMS = [
     ("HUE_SATURATION", "Hue / Saturation", ""),
     ("INVERT", "Invert", ""),
     ("POSTERIZE", "Posterize", ""),
+    ("BLEND", "Layer Blend", ""),
+]
+
+_TRANSFER_MODE_ITEMS = [
+    ("NEAREST_VERTEX", "Nearest Vertex", ""),
+    ("NEAREST_SURFACE", "Nearest Surface", ""),
+    ("RAYCAST", "Raycast", ""),
 ]
 
 
@@ -248,6 +256,14 @@ class MoreColorsPreferences(AddonPreferences):
         default="LEVELS",
     )
 
+    # -- Attribute Transfer defaults --
+    show_transfer: BoolProperty(name="Transfer Defaults", default=False)
+    default_transfer_mode: EnumProperty(
+        name="Mode",
+        items=_TRANSFER_MODE_ITEMS,
+        default="NEAREST_VERTEX",
+    )
+
     # -- Selection defaults --
     default_selection_selected_color: FloatVectorProperty(
         name="Selected Color",
@@ -322,6 +338,12 @@ class MoreColorsPreferences(AddonPreferences):
         if self.show_adjustments:
             box = layout.box()
             box.prop(self, "default_adjustment_operation")
+
+        # -- Attribute Transfer Defaults --
+        self._draw_section_header(layout, "show_transfer", "BRUSH_DATA", "Transfer Defaults")
+        if self.show_transfer:
+            box = layout.box()
+            box.prop(self, "default_transfer_mode")
 
         # -- Selection Defaults --
         self._draw_section_header(layout, "show_selection", "RESTRICT_SELECT_OFF", "Selection Defaults")
@@ -435,6 +457,11 @@ def _apply_startup_defaults(_=None):
     adj_tool = getattr(scene, "more_colors_color_adjustments_tool", None)
     if adj_tool:
         adj_tool.operation = prefs.default_adjustment_operation
+
+    # Attribute Transfer
+    transfer_tool = getattr(scene, "more_colors_attribute_transfer_tool", None)
+    if transfer_tool:
+        transfer_tool.transfer_mode = prefs.default_transfer_mode
 
     # Selection
     selection_tool = getattr(scene, "more_colors_color_by_selection_tool", None)

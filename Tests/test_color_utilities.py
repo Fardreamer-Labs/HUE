@@ -80,32 +80,23 @@ def _cleanup_objects():
 # ==============================================================================
 
 
-class TestGetRandomColorByRGBA(unittest.TestCase):
-    def test_returns_4_tuple(self):
-        c = get_random_color_by_RGBA()
-        self.assertEqual(len(c), 4)
+class TestRandomColorGenerators(unittest.TestCase):
+    """Tests for get_random_color_by_RGBA and get_random_color_by_hue."""
 
-    def test_values_in_unit_range(self):
+    def test_rgba_returns_4_values_in_range(self):
         for _ in range(50):
-            for v in get_random_color_by_RGBA():
+            c = get_random_color_by_RGBA()
+            self.assertEqual(len(c), 4)
+            for v in c:
                 self.assertGreaterEqual(v, 0.0)
                 self.assertLessEqual(v, 1.0)
 
-
-class TestGetRandomColorByHue(unittest.TestCase):
-    def test_returns_4_tuple(self):
-        self.assertEqual(len(get_random_color_by_hue()), 4)
-
-    def test_values_in_unit_range(self):
-        for _ in range(50):
-            for v in get_random_color_by_hue():
-                self.assertGreaterEqual(v, 0.0)
-                self.assertLessEqual(v, 1.0)
-
-    def test_rgb_are_saturated(self):
+    def test_hue_returns_saturated_colors(self):
         """Hue-based colors with S=1 L=0.5 should never be fully grey."""
         for _ in range(50):
-            r, g, b, _ = get_random_color_by_hue()
+            c = get_random_color_by_hue()
+            self.assertEqual(len(c), 4)
+            r, g, b, _ = c
             self.assertFalse(r == g == b, "Expected saturated color, got grey")
 
 
@@ -125,17 +116,13 @@ class TestGetRandomColor(unittest.TestCase):
 
 
 class TestGetMaskedColor(unittest.TestCase):
-    def test_all_true_replaces_all(self):
+    def test_full_and_empty_mask(self):
         old = (0.1, 0.2, 0.3, 0.4)
         new = (0.5, 0.6, 0.7, 0.8)
         self.assertEqual(
             get_masked_color(old, new, (True, True, True, True)),
             [0.5, 0.6, 0.7, 0.8],
         )
-
-    def test_all_false_keeps_old(self):
-        old = (0.1, 0.2, 0.3, 0.4)
-        new = (0.5, 0.6, 0.7, 0.8)
         self.assertEqual(
             get_masked_color(old, new, (False, False, False, False)),
             [0.1, 0.2, 0.3, 0.4],

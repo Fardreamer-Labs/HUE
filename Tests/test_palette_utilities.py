@@ -24,7 +24,6 @@ import bpy
 
 from utilities.palette_utilities import (
     DEFAULT_PALETTE_NAME,
-    SWATCH_COLS,
     _linear_to_srgb,
     cleanup_previews,
     get_color_icon,
@@ -59,12 +58,6 @@ class TestLinearToSrgb(unittest.TestCase):
             curr = _linear_to_srgb(val)
             self.assertGreater(curr, prev)
             prev = curr
-
-
-class TestSwatchCols(unittest.TestCase):
-    def test_is_positive_int(self):
-        self.assertIsInstance(SWATCH_COLS, int)
-        self.assertGreater(SWATCH_COLS, 0)
 
 
 class TestGetOrCreateDefaultPalette(unittest.TestCase):

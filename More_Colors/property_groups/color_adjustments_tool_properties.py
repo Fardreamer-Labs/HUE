@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from bpy.props import EnumProperty, FloatProperty, IntProperty
+from bpy.props import EnumProperty, FloatProperty, IntProperty, StringProperty
 from bpy.types import PropertyGroup
 
 
@@ -18,6 +18,7 @@ class ColorAdjustmentsToolProperties(PropertyGroup):
              "Shift hue and adjust saturation and value", "COLOR", 3),
             ("INVERT", "Invert", "Invert color channels", "ARROW_LEFTRIGHT", 4),
             ("POSTERIZE", "Posterize", "Reduce number of color levels", "IPO_CONSTANT", 5),
+            ("BLEND", "Layer Blend", "Blend another color attribute layer onto the active one", "NODE_COMPOSITING", 6),
         ],
         default="LEVELS",
     )
@@ -112,4 +113,33 @@ class ColorAdjustmentsToolProperties(PropertyGroup):
         default=8,
         min=2,
         max=256,
+    )
+
+    # -- Layer Blend --
+    blend_layer: StringProperty(
+        name="Layer",
+        description="Name of the color attribute layer to blend from",
+        default="",
+    )
+
+    blend_mode: EnumProperty(
+        name="Mode",
+        description="How to combine the two layers",
+        items=[
+            ("MIX", "Mix", "Linear interpolation toward the blend layer"),
+            ("MULTIPLY", "Multiply", "Multiply the two layers"),
+            ("ADD", "Add", "Add the blend layer on top"),
+            ("SUBTRACT", "Subtract", "Subtract the blend layer"),
+            ("OVERLAY", "Overlay", "Overlay blend (contrast-enhancing)"),
+            ("SCREEN", "Screen", "Screen blend (lightening)"),
+        ],
+        default="MIX",
+    )
+
+    blend_factor: FloatProperty(
+        name="Factor",
+        description="Strength of the blend operation",
+        default=1.0,
+        min=0.0,
+        max=1.0,
     )

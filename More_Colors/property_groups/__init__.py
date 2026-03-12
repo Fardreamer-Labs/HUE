@@ -6,6 +6,7 @@
 import bpy
 
 from . import (
+    attribute_transfer_tool_properties,
     color_adjustments_tool_properties,
     color_by_position_tool_properties,
     color_by_selection_tool_properties,
@@ -25,6 +26,7 @@ classes = [
     smooth_tool_properties.SmoothToolProperties,
     color_by_selection_tool_properties.ColorBySelectionToolProperties,
     color_adjustments_tool_properties.ColorAdjustmentsToolProperties,
+    attribute_transfer_tool_properties.AttributeTransferToolProperties,
 ]
 
 
@@ -48,6 +50,8 @@ def register():
         type=color_by_selection_tool_properties.ColorBySelectionToolProperties)
     bpy.types.Scene.more_colors_color_adjustments_tool = bpy.props.PointerProperty(
         type=color_adjustments_tool_properties.ColorAdjustmentsToolProperties)
+    bpy.types.Scene.more_colors_attribute_transfer_tool = bpy.props.PointerProperty(
+        type=attribute_transfer_tool_properties.AttributeTransferToolProperties)
 
 
 def unregister():
@@ -62,3 +66,4 @@ def unregister():
     del bpy.types.Scene.more_colors_smooth_tool
     del bpy.types.Scene.more_colors_color_by_selection_tool
     del bpy.types.Scene.more_colors_color_adjustments_tool
+    del bpy.types.Scene.more_colors_attribute_transfer_tool

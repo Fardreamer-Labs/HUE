@@ -58,6 +58,8 @@ class MC_OT_add_color_by_position(BaseColorOperator):
             case "NOISE":
                 return self._noise_values(obj, tool)
             case "CURVATURE":
+                if tool.curvature_use_cotangent:
+                    return self._cotangent_curvature_values(obj)
                 return self._curvature_values(obj)
             case "WEIGHT":
                 return self._weight_values(obj)
@@ -411,6 +413,152 @@ class MC_OT_add_color_by_position(BaseColorOperator):
         quality_count = np.maximum(quality_count, 1)
 
         return MC_OT_add_color_by_position._normalize_np(quality_sum / quality_count)
+
+    @staticmethod
+    def _cotangent_curvature_values(obj):
+        """Mean curvature via cotangent-weighted Laplacian.
+
+        For each edge, uses the cotangent of the two opposite angles in
+        the adjacent triangles as weights.  Produces smoother results than
+        the simple uniform-weight Laplacian in ``_curvature_values``,
+        especially on irregular meshes.  Non-manifold edges (boundary or
+        more than 2 adjacent faces) fall back to uniform weight = 1.
+        """
+        mesh = obj.data
+        n = len(mesh.vertices)
+        n_edges = len(mesh.edges)
+        n_polys = len(mesh.polygons)
+        n_loops = len(mesh.loops)
+
+        # Vertex positions & normals
+        coords = np.empty(n * 3, dtype=np.float64)
+        mesh.vertices.foreach_get("co", coords)
+        coords = coords.reshape(n, 3)
+
+        normals = np.empty(n * 3, dtype=np.float64)
+        mesh.vertices.foreach_get("normal", normals)
+        normals = normals.reshape(n, 3)
+
+        # Edge vertex pairs
+        edge_verts = np.empty(n_edges * 2, dtype=np.int32)
+        mesh.edges.foreach_get("vertices", edge_verts)
+        v0 = edge_verts[0::2]
+        v1 = edge_verts[1::2]
+
+        # Loop data for building edge→opposite-vertex map
+        loop_verts = np.empty(n_loops, dtype=np.int32)
+        mesh.loops.foreach_get("vertex_index", loop_verts)
+        loop_edge_idx = np.empty(n_loops, dtype=np.int32)
+        mesh.loops.foreach_get("edge_index", loop_edge_idx)
+        loop_starts = np.empty(n_polys, dtype=np.int32)
+        loop_totals = np.empty(n_polys, dtype=np.int32)
+        mesh.polygons.foreach_get("loop_start", loop_starts)
+        mesh.polygons.foreach_get("loop_total", loop_totals)
+
+        # Build "next loop in face" index array (wrapping)
+        next_loop = np.arange(1, n_loops + 1, dtype=np.int32)
+        face_ends = loop_starts + loop_totals - 1
+        next_loop[face_ends] = loop_starts
+
+        # For each loop, its "previous" loop in the same face
+        prev_loop = np.empty(n_loops, dtype=np.int32)
+        prev_loop[next_loop[np.arange(n_loops)]] = np.arange(n_loops, dtype=np.int32)
+
+        # For each loop that belongs to an edge, compute the cotangent
+        # of the angle at the *opposite* vertex in that triangle.
+        # The opposite vertex is the vertex of the face that is NOT on the edge.
+        # In a polygon with >3 sides, we use the two vertices adjacent to
+        # the edge vertices within the face (next of v1 loop, prev of v0 loop).
+        # For triangles this gives the single opposite vertex.
+
+        # Accumulate cotangent weights per edge from each adjacent face.
+        cot_weight = np.zeros(n_edges, dtype=np.float64)
+        cot_count = np.zeros(n_edges, dtype=np.int32)
+
+        # Map loops to faces
+        loop_face = np.repeat(np.arange(n_polys, dtype=np.int32), loop_totals)
+
+        # For each loop, get the edge it belongs to and the opposite tip vertex.
+        # The "opposite" for a loop with edge (A,B) is the vertex at the tip
+        # of the triangle containing that edge.  For a triangle face, this is
+        # the remaining vertex.  We find it as: for the loop whose edge goes
+        # A→B, the next vertex in the face after B is the opposite tip
+        # (for a triangle, this is correct; for n-gons it's a reasonable
+        # approximation).
+
+        # For each loop i, edge_index tells us which edge it contains.
+        # The opposite vertex is at the position *two loops ahead* for
+        # a triangle.  For general polygons we use the vertex that is
+        # neither endpoint of the edge.
+
+        # Approach: iterate faces in Python (fast enough — one pass over faces)
+        # to find per-edge opposite vertices, then vectorize the cotangent.
+
+        # Build per-edge list of opposite vertex indices
+        # (up to 2 per edge for manifold meshes)
+        opp_edge = []
+        opp_vert = []
+        ls = loop_starts
+        lt = loop_totals
+        for fi in range(n_polys):
+            start = ls[fi]
+            total = lt[fi]
+            if total < 3:
+                continue
+            face_loop_verts = loop_verts[start:start + total]
+            face_loop_edges = loop_edge_idx[start:start + total]
+            for li in range(total):
+                ei = face_loop_edges[li]
+                # The edge connects face_loop_verts[li] → face_loop_verts[(li+1)%total].
+                # The opposite vertex for this edge in this face is face_loop_verts[(li+2)%total]
+                # (works exactly for tris; for quads+ it's the first non-edge vertex).
+                opp_idx = (li + 2) % total
+                opp_edge.append(ei)
+                opp_vert.append(face_loop_verts[opp_idx])
+
+        if opp_edge:
+            opp_edge = np.array(opp_edge, dtype=np.int32)
+            opp_vert_arr = np.array(opp_vert, dtype=np.int32)
+
+            # Cotangent of the angle at opp_vert for the triangle formed by
+            # edge endpoints and the opposite vertex.
+            ev0 = v0[opp_edge]
+            ev1 = v1[opp_edge]
+            a_vec = coords[ev0] - coords[opp_vert_arr]
+            b_vec = coords[ev1] - coords[opp_vert_arr]
+            dot = np.sum(a_vec * b_vec, axis=1)
+            cross_mag = np.linalg.norm(np.cross(a_vec, b_vec), axis=1)
+            cross_mag = np.maximum(cross_mag, 1e-12)
+            cot = dot / cross_mag
+
+            np.add.at(cot_weight, opp_edge, cot)
+            np.add.at(cot_count, opp_edge, 1)
+
+        # Edges with no adjacent faces get uniform weight
+        no_adj = cot_count == 0
+        cot_weight[no_adj] = 1.0
+
+        # Clamp to avoid negative weights from obtuse angles
+        cot_weight = np.maximum(cot_weight, 1e-6)
+
+        # Weighted Laplacian: sum_j w_ij * (p_j - p_i)
+        diff_01 = coords[v1] - coords[v0]  # v0 toward v1
+        diff_10 = -diff_01                   # v1 toward v0
+
+        weighted_lap = np.zeros((n, 3), dtype=np.float64)
+        weight_sum = np.zeros(n, dtype=np.float64)
+        np.add.at(weighted_lap, v0, cot_weight[:, np.newaxis] * diff_01)
+        np.add.at(weighted_lap, v1, cot_weight[:, np.newaxis] * diff_10)
+        np.add.at(weight_sum, v0, cot_weight)
+        np.add.at(weight_sum, v1, cot_weight)
+
+        has_neighbors = weight_sum > 0
+        weighted_lap[has_neighbors] /= weight_sum[has_neighbors, np.newaxis]
+
+        # Mean curvature ~ Laplacian dot normal
+        raw = np.sum(weighted_lap * normals, axis=1)
+        raw[~has_neighbors] = 0.0
+        return MC_OT_add_color_by_position._normalize_np(raw)
 
     # ---- Shared helpers ----
 

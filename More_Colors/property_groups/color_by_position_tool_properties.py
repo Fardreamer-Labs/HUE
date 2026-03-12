@@ -132,6 +132,12 @@ class ColorByPositionToolProperties(PropertyGroup):
         default=True,
     )
 
+    curvature_use_cotangent: BoolProperty(
+        name="Cotangent Weights",
+        description="Use cotangent-weighted Laplacian for smoother curvature on irregular meshes",
+        default=False,
+    )
+
     color_ramp_material_name: StringProperty(
         name="Color Ramp Material Name",
         default="MORECOLORS_ColorByPositionRamp",

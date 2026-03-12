@@ -41,7 +41,7 @@ class MC_PT_color_by_position_tool_panel(BasePanelInfo, Panel):
                 layout.prop(tool, "noise_seed")
 
             case "CURVATURE":
-                pass
+                layout.prop(tool, "curvature_use_cotangent")
 
             case "DIRTY":
                 layout.prop(tool, "dirt_highlight_angle")

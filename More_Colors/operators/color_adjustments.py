@@ -12,7 +12,7 @@ from ..utilities.color_utilities import (
 
 
 class MC_OT_color_adjustments(BaseColorOperator):
-    """Applies color adjustments (levels, brightness, hue, invert, posterize)"""
+    """Applies color adjustments (levels, brightness, hue, invert, posterize, layer blend)"""
 
     bl_label = "Apply Adjustment"
     bl_idname = "morecolors.color_adjustments"
@@ -23,11 +23,17 @@ class MC_OT_color_adjustments(BaseColorOperator):
         mask = context.scene.more_colors_global_color_settings.get_mask()
         select_mode = context.tool_settings.mesh_select_mode if context.mode == 'EDIT_MESH' else None
 
+        if tool.operation == "BLEND" and not tool.blend_layer:
+            self.report({"ERROR"}, "No blend layer selected.")
+            return {"CANCELLED"}
+
         for obj in context.selected_objects:
             if obj.type != "MESH":
                 continue
             with ensure_object_mode(obj):
-                self._adjust(obj, tool, mask, select_mode)
+                if not self._adjust(obj, tool, mask, select_mode):
+                    self.report({"ERROR"}, f"Blend layer '{tool.blend_layer}' not found on {obj.name}.")
+                    return {"CANCELLED"}
 
         self.report({"INFO"}, "Color adjustment applied!")
         return {"FINISHED"}
@@ -62,11 +68,22 @@ class MC_OT_color_adjustments(BaseColorOperator):
             case "POSTERIZE":
                 levels = max(tool.posterize_levels, 2)
                 src[:, :3] = np.round(src[:, :3] * (levels - 1)) / (levels - 1)
+            case "BLEND":
+                blend_attr = obj.data.color_attributes.get(tool.blend_layer)
+                if blend_attr is None:
+                    return False
+                blend_colors = bulk_get_colors(blend_attr)
+                blend_src = blend_colors[target]
+                src[:, :3] = _apply_layer_blend(
+                    src[:, :3], blend_src[:, :3],
+                    tool.blend_mode, tool.blend_factor,
+                )
 
         src[:, :3] = np.clip(src[:, :3], 0.0, 1.0)
         apply_mask_array(colors, src, mask, target)
         bulk_set_colors(color_attribute, colors)
         obj.data.update()
+        return True
 
 
 # ---------------------------------------------------------------------------
@@ -137,3 +154,27 @@ def _hsv_to_rgb(hsv):
     b = np.choose(i, [p, p, t, v, v, q])
 
     return np.column_stack([r, g, b]).astype(hsv.dtype)
+
+
+def _apply_layer_blend(base, blend, mode, factor):
+    """Blend *blend* onto *base* using the specified blend *mode* and *factor*."""
+    match mode:
+        case "MIX":
+            result = base + (blend - base) * factor
+        case "MULTIPLY":
+            result = base * (1.0 - factor) + base * blend * factor
+        case "ADD":
+            result = base + blend * factor
+        case "SUBTRACT":
+            result = base - blend * factor
+        case "OVERLAY":
+            lo = 2.0 * base * blend
+            hi = 1.0 - 2.0 * (1.0 - base) * (1.0 - blend)
+            overlay = np.where(base < 0.5, lo, hi)
+            result = base + (overlay - base) * factor
+        case "SCREEN":
+            screen = 1.0 - (1.0 - base) * (1.0 - blend)
+            result = base + (screen - base) * factor
+        case _:
+            result = base
+    return result

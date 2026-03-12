@@ -192,9 +192,13 @@ class MC_OT_add_color_by_position(BaseColorOperator):
     def _dirty_values(obj, tool):
         """Compute per-vertex dirt (cavity/occlusion) values.
 
-        For each vertex, compares its normal against the direction to each
-        neighbor.  Concave areas (crevices) score high, convex (exposed)
-        areas score low.  Optional blur passes smooth the result.
+        Matches Blender's native Dirty Vertex Colors algorithm:
+        for each vertex, average the directions to all connected
+        neighbours, then measure the angle between that average
+        direction and the vertex normal.
+          angle < 90 °  →  concave (dirt)   →  low tone (dark)
+          angle > 90 °  →  convex  (clean)  →  high tone (bright)
+          angle ≈ 90 °  →  flat             →  mid tone
         """
         mesh = obj.data
         n = len(mesh.vertices)
@@ -214,61 +218,67 @@ class MC_OT_add_color_by_position(BaseColorOperator):
         v0 = edge_verts[0::2]
         v1 = edge_verts[1::2]
 
-        # For each edge, compute how much the vertex normal points toward
-        # the neighbor.  dot(normal, normalize(neighbor - self)):
-        #   positive = neighbor is "above" (convex/clean)
-        #   negative = neighbor is "below" (concave/dirty)
-        d01 = coords[v1] - coords[v0]  # direction v0 -> v1
-        d10 = -d01                       # direction v1 -> v0
+        # For each edge, compute the normalized direction to the neighbour
+        d01 = coords[v1] - coords[v0]
+        d10 = -d01
         len01 = np.linalg.norm(d01, axis=1, keepdims=True)
-        len01 = np.maximum(len01, 1e-12)  # avoid /0
+        len01 = np.maximum(len01, 1e-12)
         d01 /= len01
         d10 /= len01
 
-        # dot products: how much each vertex normal faces toward its neighbor
-        dot_v0 = np.sum(normals[v0] * d01, axis=1)  # v0 looking toward v1
-        dot_v1 = np.sum(normals[v1] * d10, axis=1)  # v1 looking toward v0
+        # Accumulate average neighbour direction per vertex
+        dir_sum = np.zeros((n, 3), dtype=np.float64)
+        dir_count = np.zeros(n, dtype=np.float64)
+        np.add.at(dir_sum, v0, d01)
+        np.add.at(dir_sum, v1, d10)
+        np.add.at(dir_count, v0, 1)
+        np.add.at(dir_count, v1, 1)
 
-        # Accumulate per-vertex average dot
-        dirt_sum = np.zeros(n, dtype=np.float64)
-        dirt_count = np.zeros(n, dtype=np.float64)
-        np.add.at(dirt_sum, v0, dot_v0)
-        np.add.at(dirt_sum, v1, dot_v1)
-        np.add.at(dirt_count, v0, 1)
-        np.add.at(dirt_count, v1, 1)
+        has_neighbors = dir_count > 0
+        dir_sum[has_neighbors] /= dir_count[has_neighbors, np.newaxis]
 
-        has_neighbors = dirt_count > 0
-        avg_dot = np.zeros(n, dtype=np.float64)
-        avg_dot[has_neighbors] = dirt_sum[has_neighbors] / dirt_count[has_neighbors]
+        # angle = acos(normal · avg_dir), clamped to [-1, 1]
+        dot = np.sum(normals * dir_sum, axis=1)
+        dot = np.clip(dot, -1.0, 1.0)
+        angles = np.where(has_neighbors, np.arccos(dot), np.pi / 2.0)
 
-        # Map: positive dot (concave crevice → neighbor below normal) = dirty.
-        # Remap with angle thresholds:
-        #   dirt_angle  → below this dot the vertex is fully dirty (1.0)
-        #   highlight_angle → above this dot the vertex is fully clean (0.0)
-        dirt_cos = np.cos(tool.dirt_dirt_angle)
-        high_cos = np.cos(tool.dirt_highlight_angle)
-        # avg_dot range is roughly [-1, 1].  Concave → positive, convex → negative.
-        # Map so that high positive = 1 (dirty) and low/negative = 0 (clean).
-        if abs(high_cos - dirt_cos) > 1e-12:
-            values = np.clip((avg_dot - dirt_cos) / (high_cos - dirt_cos), 0.0, 1.0)
-        else:
-            values = np.where(avg_dot >= dirt_cos, 1.0, 0.0)
+        # Clamp with dirt/highlight angle thresholds
+        angles = np.maximum(angles, tool.dirt_dirt_angle)
+        if not tool.dirt_only_dirty:
+            angles = np.minimum(angles, tool.dirt_highlight_angle)
 
-        if tool.dirt_only_dirty:
-            values = np.clip(values, 0.5, 1.0)
-            values = (values - 0.5) * 2.0
-
-        # Optional blur passes (reuse edge adjacency)
+        # Blur passes (operate on angle values, matching Blender)
         strength = tool.dirt_blur_strength
         for _ in range(tool.dirt_blur_iterations):
+            orig = angles.copy()
             neighbor_sum = np.zeros(n, dtype=np.float64)
-            np.add.at(neighbor_sum, v0, values[v1])
-            np.add.at(neighbor_sum, v1, values[v0])
-            avg = np.zeros(n, dtype=np.float64)
-            avg[has_neighbors] = neighbor_sum[has_neighbors] / dirt_count[has_neighbors]
-            values = np.where(has_neighbors, values + (avg - values) * strength, values)
+            np.add.at(neighbor_sum, v0, orig[v1])
+            np.add.at(neighbor_sum, v1, orig[v0])
+            blurred = np.where(
+                has_neighbors,
+                (angles + neighbor_sum * strength) / (dir_count * strength + 1.0),
+                angles,
+            )
+            angles = blurred
 
-        return MC_OT_add_color_by_position._normalize_np(values) if tool.dirt_normalize else values
+        # Normalize to 0-1
+        if tool.dirt_normalize:
+            min_tone = angles.min()
+            max_tone = angles.max()
+        else:
+            min_tone = tool.dirt_dirt_angle
+            max_tone = tool.dirt_highlight_angle
+
+        tone_range = max_tone - min_tone
+        if tone_range < 1e-4:
+            values = np.zeros(n, dtype=np.float64)
+        else:
+            values = (angles - min_tone) / tone_range
+
+        if tool.dirt_only_dirty:
+            values = np.minimum(values, 0.5) * 2.0
+
+        return values
 
     @staticmethod
     def _valence_values(obj):

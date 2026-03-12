@@ -58,7 +58,10 @@ class MC_OT_add_random_color(BaseColorOperator):
         self.element_type = tool.element_type
         self.color_mode = tool.color_mode
         self.seed = random.randint(0, 99999)
-        return self.execute(context)
+        result = self.execute(context)
+        if result == {'FINISHED'}:
+            self._maybe_warn_visibility(context)
+        return result
 
     def add_random_color_per_face(self, obj, color_attribute, global_color_settings,
                                   palette, selected_only=True):

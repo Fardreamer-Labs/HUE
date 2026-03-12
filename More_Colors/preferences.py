@@ -221,6 +221,33 @@ class MC_OT_show_keybinds(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MC_OT_visibility_warning(bpy.types.Operator):
+    """Vertex colors may not be visible in the current viewport"""
+
+    bl_label = "Color Not Visible"
+    bl_idname = "morecolors.visibility_warning"
+    bl_options = {'REGISTER'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=420)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Vertex colors may not be visible.", icon='INFO')
+        layout.label(text="Enable vertex color display to see your changes.")
+        layout.separator()
+        layout.operator("morecolors.enable_rgb_display", text="Enable Attribute View", icon="HIDE_OFF")
+        layout.separator()
+        try:
+            prefs = context.preferences.addons[__package__].preferences
+            layout.prop(prefs, "suppress_visibility_warning", text="Don't warn me about this")
+        except KeyError:
+            pass
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
 # ---------------------------------------------------------------------------
 # Addon Preferences
 # ---------------------------------------------------------------------------
@@ -261,6 +288,14 @@ class MoreColorsPreferences(AddonPreferences):
     default_quick_fill: BoolProperty(
         name="Quick Fill",
         description="When enabled, clicking a palette swatch immediately fills the object with that color",
+        default=False,
+    )
+    suppress_visibility_warning: BoolProperty(
+        name="Don't warn when colors aren't visible",
+        description=(
+            "Suppress the warning popup shown after tool operations when "
+            "vertex colors can't be seen in the current viewport"
+        ),
         default=False,
     )
 
@@ -467,6 +502,7 @@ class MoreColorsPreferences(AddonPreferences):
 
             layout.separator(factor=0.5)
             layout.operator("morecolors.show_keybinds", text="Keyboard Shortcuts", icon="QUESTION")
+            layout.prop(self, "suppress_visibility_warning")
 
         elif self.active_tab == "PAINT":
             self._draw_section_header(layout, "show_fill", "BRUSH_DATA", "Fill Defaults")
@@ -657,6 +693,7 @@ classes = [
     MC_OT_add_default_palette_color,
     MC_OT_remove_default_palette_color,
     MC_OT_show_keybinds,
+    MC_OT_visibility_warning,
     MoreColorsPreferences,
 ]
 

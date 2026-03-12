@@ -15,6 +15,8 @@ from .base_operators import BaseColorOperator
 class MC_OT_reset_color(BaseColorOperator):
     """Resets vertex colors to white (selection-aware in edit mode)"""
 
+    warn_visibility_check = False
+
     bl_label = "Reset Vertex Colors"
     bl_idname = "morecolors.reset_vertex_colors"
     bl_options = {'REGISTER', 'UNDO'}

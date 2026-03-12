@@ -21,6 +21,7 @@ from . import (
 
 classes = [
     display_vertex_colors.MC_OT_display_vertex_colors,
+    display_vertex_colors.MC_OT_enable_rgb_display,
 
     add_random_color.MC_OT_add_random_color,
     add_random_color.MC_OT_add_random_color_by_object,

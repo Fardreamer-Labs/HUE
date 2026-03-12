@@ -147,3 +147,25 @@ class MC_OT_display_vertex_colors(BaseOperator):
     def execute(self, context):
         update_display(context)
         return {"FINISHED"}
+
+
+class MC_OT_enable_rgb_display(BaseOperator):
+    """Switches the viewport to show vertex colors (RGB mode), the same as clicking RGB in the Display Settings panel"""
+
+    bl_label = "Enable Attribute View"
+    bl_idname = "morecolors.enable_rgb_display"
+    bl_options = {'REGISTER'}
+
+    def execute(self, context):
+        settings = context.scene.more_colors_display_settings
+        # Find a 3D viewport and apply with a proper context so the
+        # display_mode update callback can set shading correctly.
+        for area in context.screen.areas:
+            if area.type == 'VIEW_3D':
+                with context.temp_override(area=area, space_data=area.spaces.active):
+                    settings.display_mode = "RGB"
+                break
+        else:
+            # No 3D viewport visible — set the mode anyway for when one opens.
+            settings.display_mode = "RGB"
+        return {"FINISHED"}

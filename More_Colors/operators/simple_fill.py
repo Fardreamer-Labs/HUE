@@ -126,6 +126,8 @@ class MC_OT_new_palette(BaseOperator):
 class MC_OT_use_preset_color(BaseOperator):
     """Selects this preset and sets it as the active color. With Quick Fill enabled, also immediately fills the object."""
 
+    warn_visibility_check = False
+
     bl_label = "Use Preset Color"
     bl_idname = "morecolors.use_preset_color"
     bl_options = {'REGISTER', 'UNDO'}

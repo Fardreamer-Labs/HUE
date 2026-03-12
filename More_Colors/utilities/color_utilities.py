@@ -210,3 +210,18 @@ def get_selected_color_indices(obj, select_mode, domain):
             if poly.select:
                 indices.update(poly.loop_indices)
     return np.array(sorted(indices), dtype=np.intp) if indices else np.array([], dtype=np.intp)
+
+
+def is_vertex_color_visible(context):
+    """Return True if vertex colors are currently visible in the viewport.
+
+    Returns True in Vertex Paint mode, when in Solid shading with VERTEX or
+    ATTRIBUTE color type, or when not inside a 3D viewport at all.
+    """
+    if context.mode == 'VERTEX_PAINT':
+        return True
+    space = getattr(context, 'space_data', None)
+    if space is None or not hasattr(space, 'shading'):
+        return True  # Not in a 3D viewport — don't nag
+    shading = space.shading
+    return shading.type == 'SOLID' and shading.color_type in ('VERTEX', 'ATTRIBUTE')

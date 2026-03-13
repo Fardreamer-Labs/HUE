@@ -26,6 +26,8 @@ classes = [
     add_random_color.MC_OT_add_random_color,
     add_random_color.MC_OT_add_random_color_by_object,
     open_documentation.MC_OT_open_documentation,
+    open_documentation.MC_OT_open_bug_report,
+    open_documentation.MC_OT_open_review,
     reset_vertex_colors.MC_OT_reset_color,
 
     add_color_by_position.MC_OT_add_color_by_position,

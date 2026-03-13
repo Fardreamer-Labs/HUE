@@ -15,7 +15,27 @@ class MC_OT_open_documentation(BaseOperator):
     bl_idname = "morecolors.open_documentation"
 
     def execute(self, context):
-        url = "https://github.com/tojynick/More-Colors"
-        webbrowser.open(url)
+        webbrowser.open("https://github.com/tojynick/More-Colors")
+        return {"FINISHED"}
 
+
+class MC_OT_open_bug_report(BaseOperator):
+    """Opens the GitHub issue tracker"""
+
+    bl_label = "Report a Bug"
+    bl_idname = "morecolors.open_bug_report"
+
+    def execute(self, context):
+        webbrowser.open("https://github.com/tojynick/More-Colors/issues")
+        return {"FINISHED"}
+
+
+class MC_OT_open_review(BaseOperator):
+    """Opens the Blender Extensions page to leave a review"""
+
+    bl_label = "Leave a Review"
+    bl_idname = "morecolors.open_review"
+
+    def execute(self, context):
+        webbrowser.open("https://extensions.blender.org/add-ons/more-colors/")
         return {"FINISHED"}

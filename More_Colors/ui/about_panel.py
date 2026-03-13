@@ -29,6 +29,21 @@ class MC_PT_about_panel(BasePanelInfo, Panel):
 
         layout.label(text=f"More Colors! v{_get_version()}")
 
+        # --- Credits ---
         col = layout.column(align=True)
         col.label(text="Created by Kai Fardreamer", icon="FUND")
-        col.label(text="Maintained by Clonephaze", icon="FUND")
+        col.label(text="Maintained by Clonephaze", icon="USER")
+
+        layout.separator()
+
+        # --- Links ---
+        col = layout.column(align=True)
+        col.operator("morecolors.open_documentation", text="Open Documentation", icon="HELP")
+        col.operator("morecolors.open_bug_report", text="Report Bug / Request Feature", icon="SYSTEM")
+
+        layout.separator()
+
+        # --- Review ---
+        box = layout.box()
+        box.label(text="Enjoying More Colors?", icon="FUND")
+        box.operator("morecolors.open_review", text="Leave a Review", icon="SOLO_ON")

@@ -1,10 +1,10 @@
 <img alt="Addon banner" src="./resources/banner.png"/>
 
-# Blender Add-on: More Colors!
+# 🖌️More Colors!
 
-A simple Blender 4.2+ add-on that makes working with vertex colors easier.
+A Blender add-on that makes working with vertex colors easier.
 
-## Features
+## ✨ Features
 
 - **Preview vertex colors (including alpha!)** from object and edit modes
 - Various tools, including **fill**, **randomize**, **gradient**, **smooth**, and **color by selection**
@@ -14,13 +14,14 @@ A simple Blender 4.2+ add-on that makes working with vertex colors easier.
 - **Palette system** with customizable swatches shared across tools
 - **Addon preferences** with startup defaults for every tool
 
-## Installation Via Blender's Extensions
+## 🔧 Installation Via Blender's Extensions
 
 1. Inside Blender go to **Edit** -> **Preferences** -> **Get Extensions**
 2. In the search box type **"More Colors!"**
 3. Click **"Install"**
+4. Enjoy ✨
 
-## Getting Started
+## 🚀 Getting Started
 
 After installing the add-on, you can see it on the side panel (press **N** to open it). 
 
@@ -142,7 +143,7 @@ In this panel, you can select, **which color attribute will be affected by the t
 
 Contains general info about the plugin such as add-on _name_ and _version_, original author and current maintainer, as well as a _link to this documentation_.
 
-## Addon Preferences
+## ⚙️ Addon Preferences
 
 You can configure **startup defaults** for every tool in the addon preferences (**Edit** → **Preferences** → **Add-ons** → **More Colors!**). Settings include default colors, modes, angles, and more — all applied automatically when you open a file.
 
@@ -150,7 +151,7 @@ You can also configure a **default palette** with your preferred colors, which i
 
 A **Keyboard Shortcuts** reference section lists all operators with their `bl_idname` values, making it easy to assign custom shortcuts through Blender's keymap editor.
 
-## Known Issues
+## ⚠️ Known Issues
 ### Alpha vertex display mode
 Since Blender doesn't have a built-in feature to display the alpha channel of vertex colors, I had to use a special material for that. When you enable alpha display mode, this material temporarily overrides all active object materials. If you have different materials assigned to various parts of your geometry, alpha display mode will reassign them, so be careful with that.
 
@@ -161,13 +162,13 @@ Color attributes might have two domains: vertex and face corner. The vertex doma
 
 Still, the plugin supports vertex domain, but some tools will be limited, for instance, you will lose the ability to choose the element random colors will be applied.
 
-## License
+## 📃 License
 
 Licensed under GNU General Public License, Version 3.0, [LICENSE](LICENSE) or https://www.gnu.org/licenses/gpl-3.0.en.html
 
-## Copyright and Credits
+## ❤️ Credits
 
-- Copyright (c) 2024 Kai Fardreamer. All rights reserved.
-- Originally developed by Kai Fardreamer <tojynick@protonmail.com>, the repository was archived Jul 30, 2025 and picked up for maintenance by Clonephaze March 02, 2026.
+- Created by [Kai Fardreamer](https://github.com/tojynick)
+- Major contributions by [Clonephaze](https://github.com/Clonephaze), thank you!
 
 - Some ideas are inspired by [Ethan Simon-Law](https://github.com/oRazeD)`s [Vertex Color Plus](https://github.com/oRazeD/VertexColorsPlus/tree/stable) addon, check it out as well!

@@ -5,6 +5,7 @@
 
 import bpy
 
+from ..utilities.palette_utilities import DEFAULT_PALETTE_NAME
 from ..utilities.color_utilities import (
     apply_mask_constant, bulk_get_colors, bulk_set_colors,
     ensure_object_mode, get_active_color_attribute, get_selected_color_indices,
@@ -120,6 +121,77 @@ class MC_OT_new_palette(BaseOperator):
         tool = context.scene.more_colors_simple_fill_tool
         tool.preset_palette = palette
         tool.active_preset_index = 0
+        return {"FINISHED"}
+
+
+class MC_OT_rename_palette(BaseOperator):
+    """Renames the currently selected palette"""
+
+    bl_label = "Rename Palette"
+    bl_idname = "morecolors.rename_palette"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    new_name: bpy.props.StringProperty(name="Name")
+
+    def invoke(self, context, event):
+        palette = context.scene.more_colors_simple_fill_tool.preset_palette
+        if not palette:
+            self.report({"WARNING"}, "No palette selected")
+            return {"CANCELLED"}
+        if palette.name == DEFAULT_PALETTE_NAME:
+            self.report({"WARNING"}, "Cannot rename the default palette!")
+            return {"CANCELLED"}
+        self.new_name = palette.name
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        self.layout.prop(self, "new_name", text="")
+
+    def execute(self, context):
+        palette = context.scene.more_colors_simple_fill_tool.preset_palette
+        if not palette:
+            return {"CANCELLED"}
+        if not self.new_name.strip():
+            self.report({"WARNING"}, "Name cannot be empty")
+            return {"CANCELLED"}
+        palette.name = self.new_name.strip()
+        return {"FINISHED"}
+
+
+class MC_OT_delete_palette(BaseOperator):
+    """Deletes the currently selected palette"""
+
+    bl_label = "Delete Palette"
+    bl_idname = "morecolors.delete_palette"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    palette_name: bpy.props.StringProperty(options={'SKIP_SAVE'})
+
+    def invoke(self, context, event):
+        palette = context.scene.more_colors_simple_fill_tool.preset_palette
+        if not palette:
+            self.report({"WARNING"}, "No palette selected")
+            return {"CANCELLED"}
+        if palette.name == DEFAULT_PALETTE_NAME:
+            self.report({"WARNING"}, "Cannot delete the default palette!")
+            return {"CANCELLED"}
+        self.palette_name = palette.name
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        self.layout.label(text=f"Delete \"{self.palette_name}\" palette?")
+
+    def execute(self, context):
+        tool = context.scene.more_colors_simple_fill_tool
+        palette = tool.preset_palette
+        if not palette:
+            self.report({"WARNING"}, "No palette selected")
+            return {"CANCELLED"}
+        if palette.name == DEFAULT_PALETTE_NAME:
+            self.report({"WARNING"}, "Cannot delete the default palette!")
+            return {"CANCELLED"}
+        tool.preset_palette = None
+        bpy.data.palettes.remove(palette)
         return {"FINISHED"}
 
 

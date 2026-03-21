@@ -191,10 +191,11 @@ class MC_OT_add_random_color(BaseColorOperator):
         select_mode = context.tool_settings.mesh_select_mode if in_edit else None
 
         palette = None
-        if random_color_tool.random_palette and len(random_color_tool.random_palette.colors) > 0:
-            palette = [
-                (*pc.color, 1.0) for pc in random_color_tool.random_palette.colors
-            ]
+        if self.color_mode == "Palette":
+            if not random_color_tool.random_palette or len(random_color_tool.random_palette.colors) == 0:
+                self.report({"ERROR"}, "Palette is empty. Add colors to the palette first.")
+                return {"CANCELLED"}
+            palette = [(*pc.color, 1.0) for pc in random_color_tool.random_palette.colors]
 
         mesh_objects = [obj for obj in context.selected_objects if obj.type == "MESH"]
 

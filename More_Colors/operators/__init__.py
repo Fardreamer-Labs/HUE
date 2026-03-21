@@ -37,6 +37,8 @@ classes = [
     simple_fill.MC_OT_add_preset_color,
     simple_fill.MC_OT_remove_preset_color,
     simple_fill.MC_OT_new_palette,
+    simple_fill.MC_OT_rename_palette,
+    simple_fill.MC_OT_delete_palette,
     simple_fill.MC_OT_use_preset_color,
 
     smooth_vertex_colors.MC_OT_smooth_vertex_colors,

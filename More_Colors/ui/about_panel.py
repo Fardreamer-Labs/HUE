@@ -31,8 +31,8 @@ class MC_PT_about_panel(BasePanelInfo, Panel):
 
         # --- Credits ---
         col = layout.column(align=True)
-        col.label(text="Created by Kai Fardreamer", icon="FUND")
-        col.label(text="Maintained by Clonephaze", icon="USER")
+        col.label(text="Created by Kai Fardreamer")
+        col.label(text="Major contributions by Clonephaze")
 
         layout.separator()
 
@@ -46,4 +46,4 @@ class MC_PT_about_panel(BasePanelInfo, Panel):
         # --- Review ---
         box = layout.box()
         box.label(text="Enjoying More Colors?", icon="FUND")
-        box.operator("morecolors.open_review", text="Leave a Review", icon="SOLO_ON")
+        box.operator("morecolors.open_review", text="Leave a Review!", icon="SOLO_ON")

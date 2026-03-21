@@ -27,6 +27,7 @@ from .tools_panel import (
 
 classes = [
     # Parent panels first (children reference these via bl_parent_id)
+    display_settings_panel.MC_PT_display_settings_panel,
     tools_panel.MC_PT_tools_panel,
     simple_fill_tool_panel.MC_PT_simple_fill_tool_panel,
     random_color_tool_panel.MC_PT_random_color_tool_panel,
@@ -39,7 +40,6 @@ classes = [
     attribute_transfer_tool_panel.MC_PT_attribute_transfer_tool_panel,
 
     settings_panel.MC_PT_settings_panel,
-    display_settings_panel.MC_PT_display_settings_panel,
     global_color_settings_panel.MC_PT_global_color_settings_panel,
     color_attributes_settings_panel.MC_PT_color_attributes_settings_panel,
 

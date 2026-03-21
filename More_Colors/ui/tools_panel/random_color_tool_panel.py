@@ -55,7 +55,6 @@ class MC_PT_random_color_tool_panel(BasePanelInfo, Panel):
             box.label(text="Palette", icon="COLOR")
             row = box.row(align=True)
             row.prop(random_color_tool, "random_palette", text="")
-            row.operator("morecolors.new_palette", icon="FILE_NEW", text="")
 
             palette = random_color_tool.random_palette
             if palette and len(palette.colors) > 0:

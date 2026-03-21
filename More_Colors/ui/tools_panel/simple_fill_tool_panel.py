@@ -39,6 +39,9 @@ class MC_PT_simple_fill_tool_panel(BasePanelInfo, Panel):
         row = box.row(align=True)
         row.prop(tool, "preset_palette", text="")
         row.operator("morecolors.new_palette", icon="FILE_NEW", text="")
+        if tool.preset_palette:
+            row.operator("morecolors.rename_palette", icon="GREASEPENCIL", text="")
+            row.operator("morecolors.delete_palette", icon="TRASH", text="")
 
         # --- Swatch grid ---
         palette = tool.preset_palette

@@ -468,7 +468,7 @@ class MoreColorsPreferences(AddonPreferences):
     def draw(self, context):
         layout = self.layout
         row = layout.row(align=True)
-        row.scale_y = 1.6
+        row.scale_y = 1.1
         row.prop_enum(self, "active_tab", "GENERAL", icon="SETTINGS")
         row.prop_enum(self, "active_tab", "PAINT", icon="BRUSH_DATA")
         row.prop_enum(self, "active_tab", "ADJUST", icon="MODIFIER")

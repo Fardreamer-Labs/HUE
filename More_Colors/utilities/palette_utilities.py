@@ -10,7 +10,7 @@ _preset_previews = {}
 SWATCH_COLS = 8
 _SWATCH_SIZE = 32
 
-DEFAULT_PALETTE_NAME = "MORECOLORS_Palette"
+DEFAULT_PALETTE_NAME = "Default_Palette"
 _DEFAULT_COLORS = [
     (1.0, 0.0, 0.0),
     (1.0, 0.5, 0.0),

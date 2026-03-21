@@ -6,6 +6,7 @@
 import bpy
 
 from .base_operators import BaseOperator
+from ..ui.settings_panel.display_settings_panel import MC_PT_display_settings_panel
 
 
 def update_display(context):
@@ -150,9 +151,8 @@ class MC_OT_display_vertex_colors(BaseOperator):
 
 
 class MC_OT_enable_rgb_display(BaseOperator):
-    """Switches the viewport to show vertex colors (RGB mode), the same as clicking RGB in the Display Settings panel"""
-
     bl_label = "Enable Attribute View"
+    bl_description = f"Switches the viewport to show vertex colors (RGB mode), the same as clicking RGB in the {MC_PT_display_settings_panel.bl_label} panel"
     bl_idname = "morecolors.enable_rgb_display"
     bl_options = {'REGISTER'}
 

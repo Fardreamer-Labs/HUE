@@ -37,5 +37,5 @@ class HUE_OT_open_review(BaseOperator):
     bl_idname = "hue.open_review"
 
     def execute(self, context):
-        webbrowser.open("https://extensions.blender.org/add-ons/hue/")
+        webbrowser.open("https://extensions.blender.org/add-ons/more-colors/")
         return {"FINISHED"}

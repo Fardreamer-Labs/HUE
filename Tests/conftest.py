@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""Test runner for More Colors! — executed inside Blender.
+"""Test runner for HUE — executed inside Blender.
 
 Usage::
 
@@ -23,7 +23,7 @@ from pathlib import Path
 
 _tests_dir = Path(__file__).resolve().parent
 _repo_root = _tests_dir.parent
-_addon_root = _repo_root / "More_Colors"
+_addon_root = _repo_root / "HUE"
 
 for p in (_tests_dir, _repo_root, _addon_root):
     s = str(p)

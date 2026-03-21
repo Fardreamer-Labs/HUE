@@ -15,7 +15,7 @@ from pathlib import Path
 
 _tests_dir = Path(__file__).resolve().parent
 _repo_root = _tests_dir.parent
-_addon_root = _repo_root / "More_Colors"
+_addon_root = _repo_root / "HUE"
 for p in (_tests_dir, _repo_root, _addon_root):
     s = str(p)
     if s not in sys.path:
@@ -24,8 +24,8 @@ for p in (_tests_dir, _repo_root, _addon_root):
 import bpy
 import numpy as np
 
-from More_Colors.operators.smooth_vertex_colors import MC_OT_smooth_vertex_colors
-from More_Colors.utilities.color_utilities import bulk_get_colors, get_active_color_attribute
+from HUE.operators.smooth_vertex_colors import HUE_OT_smooth_vertex_colors
+from HUE.utilities.color_utilities import bulk_get_colors, get_active_color_attribute
 
 
 # ---- Helpers -----------------------------------------------------------------
@@ -72,20 +72,20 @@ class TestSmoothConstraintFiltering(unittest.TestCase):
     def test_smooth_none_runs(self):
         """Smooth with NONE constraint should complete without error."""
         mask = (True, True, True, True)
-        MC_OT_smooth_vertex_colors._smooth_object(self.obj, 1, 0.5, mask, "NONE")
+        HUE_OT_smooth_vertex_colors._smooth_object(self.obj, 1, 0.5, mask, "NONE")
 
     def test_smooth_sharp_runs(self):
         """Smooth with SHARP constraint should complete without error."""
         mask = (True, True, True, True)
-        MC_OT_smooth_vertex_colors._smooth_object(self.obj, 1, 0.5, mask, "SHARP")
+        HUE_OT_smooth_vertex_colors._smooth_object(self.obj, 1, 0.5, mask, "SHARP")
 
     def test_smooth_seam_runs(self):
         mask = (True, True, True, True)
-        MC_OT_smooth_vertex_colors._smooth_object(self.obj, 1, 0.5, mask, "SEAM")
+        HUE_OT_smooth_vertex_colors._smooth_object(self.obj, 1, 0.5, mask, "SEAM")
 
     def test_smooth_boundary_runs(self):
         mask = (True, True, True, True)
-        MC_OT_smooth_vertex_colors._smooth_object(self.obj, 1, 0.5, mask, "BOUNDARY")
+        HUE_OT_smooth_vertex_colors._smooth_object(self.obj, 1, 0.5, mask, "BOUNDARY")
 
     def test_sharp_edge_affects_smoothing(self):
         """SHARP constraint should produce different results from NONE on a chain mesh."""
@@ -118,11 +118,11 @@ class TestSmoothConstraintFiltering(unittest.TestCase):
         mask = (True, True, True, True)
 
         _set_colors()
-        MC_OT_smooth_vertex_colors._smooth_object(obj, 3, 1.0, mask, "SHARP")
+        HUE_OT_smooth_vertex_colors._smooth_object(obj, 3, 1.0, mask, "SHARP")
         sharp_result = bulk_get_colors(ca).copy()
 
         _set_colors()
-        MC_OT_smooth_vertex_colors._smooth_object(obj, 3, 1.0, mask, "NONE")
+        HUE_OT_smooth_vertex_colors._smooth_object(obj, 3, 1.0, mask, "NONE")
         none_result = bulk_get_colors(ca)
 
         self.assertFalse(

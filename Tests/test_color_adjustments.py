@@ -15,7 +15,7 @@ from pathlib import Path
 
 _tests_dir = Path(__file__).resolve().parent
 _repo_root = _tests_dir.parent
-_addon_root = _repo_root / "More_Colors"
+_addon_root = _repo_root / "HUE"
 for p in (_tests_dir, _repo_root, _addon_root):
     s = str(p)
     if s not in sys.path:
@@ -23,7 +23,7 @@ for p in (_tests_dir, _repo_root, _addon_root):
 
 import numpy as np
 
-from More_Colors.operators.color_adjustments import (
+from HUE.operators.color_adjustments import (
     _apply_brightness_contrast,
     _apply_hue_saturation,
     _apply_layer_blend,

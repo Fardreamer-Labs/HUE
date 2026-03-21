@@ -1,0 +1,17 @@
+schema_version = "1.0.0"
+
+id = "hue"
+version = "1.2.1"
+name = "HUE"
+tagline = "A set of tools to make vertex painting easier"
+maintainer = "Kai Fardreamer <tojynick@protonmail.com>"
+type = "add-on"
+
+website = "https://github.com/Fardreamer-Labs/HUE"
+tags = ["3D View", "Mesh", "Paint"]
+
+blender_version_min = "4.2.0"
+
+license = [
+  "SPDX:GPL-3.0-or-later"
+]

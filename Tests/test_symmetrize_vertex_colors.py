@@ -15,7 +15,7 @@ from pathlib import Path
 
 _tests_dir = Path(__file__).resolve().parent
 _repo_root = _tests_dir.parent
-_addon_root = _repo_root / "More_Colors"
+_addon_root = _repo_root / "HUE"
 for p in (_tests_dir, _repo_root, _addon_root):
     s = str(p)
     if s not in sys.path:
@@ -24,8 +24,8 @@ for p in (_tests_dir, _repo_root, _addon_root):
 import bpy
 import numpy as np
 
-from More_Colors.operators.symmetrize_vertex_colors import MC_OT_symmetrize_vertex_colors
-from More_Colors.utilities.color_utilities import (
+from HUE.operators.symmetrize_vertex_colors import HUE_OT_symmetrize_vertex_colors
+from HUE.utilities.color_utilities import (
     bulk_get_colors, bulk_set_colors, get_active_color_attribute,
 )
 
@@ -80,7 +80,7 @@ class TestSymmetrizeVertexColors(unittest.TestCase):
         colors[2] = [0, 0, 1, 1]  # vert at (-1,1,0)
         bulk_set_colors(ca, colors)
 
-        MC_OT_symmetrize_vertex_colors._symmetrize_object(
+        HUE_OT_symmetrize_vertex_colors._symmetrize_object(
             self.obj, axis_index=0, direction="POSITIVE_TO_NEGATIVE",
             threshold=0.001, mask=self.mask, select_mode=None,
         )
@@ -103,7 +103,7 @@ class TestSymmetrizeVertexColors(unittest.TestCase):
         colors[3] = [0, 0, 0, 1]  # +X vert
         bulk_set_colors(ca, colors)
 
-        MC_OT_symmetrize_vertex_colors._symmetrize_object(
+        HUE_OT_symmetrize_vertex_colors._symmetrize_object(
             self.obj, axis_index=0, direction="NEGATIVE_TO_POSITIVE",
             threshold=0.001, mask=self.mask, select_mode=None,
         )
@@ -124,7 +124,7 @@ class TestSymmetrizeVertexColors(unittest.TestCase):
         colors[1] = [1, 0, 0, 1]
         bulk_set_colors(ca, colors)
 
-        MC_OT_symmetrize_vertex_colors._symmetrize_object(
+        HUE_OT_symmetrize_vertex_colors._symmetrize_object(
             self.obj, axis_index=0, direction="POSITIVE_TO_NEGATIVE",
             threshold=0.001, mask=self.mask, select_mode=None,
         )
@@ -155,7 +155,7 @@ class TestSymmetrizeVertexColors(unittest.TestCase):
         colors[2] = [0, 0, 0, 1]  # -Y
         bulk_set_colors(ca, colors)
 
-        MC_OT_symmetrize_vertex_colors._symmetrize_object(
+        HUE_OT_symmetrize_vertex_colors._symmetrize_object(
             obj, axis_index=1, direction="POSITIVE_TO_NEGATIVE",
             threshold=0.001, mask=self.mask, select_mode=None,
         )
@@ -184,7 +184,7 @@ class TestSymmetrizeVertexColors(unittest.TestCase):
         colors[2] = [1, 0, 0, 1]  # +X
         bulk_set_colors(ca, colors)
 
-        MC_OT_symmetrize_vertex_colors._symmetrize_object(
+        HUE_OT_symmetrize_vertex_colors._symmetrize_object(
             obj, axis_index=0, direction="POSITIVE_TO_NEGATIVE",
             threshold=0.001, mask=self.mask, select_mode=None,
         )

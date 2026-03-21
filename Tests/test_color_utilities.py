@@ -15,7 +15,7 @@ from pathlib import Path
 
 # ---- path bootstrap (when run directly, not via conftest) --------------------
 _tests_dir = Path(__file__).resolve().parent
-_addon_root = _tests_dir.parent / "More_Colors"
+_addon_root = _tests_dir.parent / "HUE"
 for p in (_tests_dir, _addon_root):
     s = str(p)
     if s not in sys.path:

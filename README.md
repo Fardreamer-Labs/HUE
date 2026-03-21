@@ -1,6 +1,6 @@
-<img alt="Addon banner" src="./resources/banner.png"/>
+<img alt="Add-on Banner" src="./resources/banner.png"/>
 
-# 🖌️More Colors!
+# 🖌️HUE
 
 A Blender add-on that makes working with vertex colors easier.
 ## ✨ Features
@@ -16,7 +16,7 @@ A Blender add-on that makes working with vertex colors easier.
 ## 🔧 Installation Via Blender's Extensions
 
 1. Inside Blender go to **Edit** -> **Preferences** -> **Get Extensions**
-2. In the search box, type **"More Colors!"**
+2. In the search box, type **"HUE"**
 3. Click **"Install"**
 4. Enjoy ✨
 
@@ -167,7 +167,7 @@ Contains general info about the plugin, such as add-on _name_ and _version_, ori
 
 ## ⚙️ Addon Preferences
 
-You can configure **startup defaults** for every tool in the addon preferences (**Edit** → **Preferences** → **Add-ons** → **More Colors!**). Settings include default colors, modes, angles, and more - all applied automatically when you open a file.
+You can configure **startup defaults** for every tool in the addon preferences (**Edit** → **Preferences** → **Add-ons** → **HUE**). Settings include default colors, modes, angles, and more - all applied automatically when you open a file.
 
 You can also configure a **default palette** with your preferred colors, which is automatically assigned to the Fill and Randomize palette pickers.
 

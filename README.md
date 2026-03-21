@@ -184,6 +184,9 @@ Color attributes might have two domains: vertex and face corner. The vertex doma
 
 Still, the plugin supports vertex domain, but some tools will be limited, for instance, you will lose the ability to choose the element, and random colors will be applied.
 
+### Documentation issues
+At the moment, the documentation is not user-friendly. I plan to move it from a markdown file to a more comfortable place (like GitBook?), plus add some screenshots and video examples, since some tools are much easier to describe visually.
+
 ## 📃 License
 
 Licensed under GNU General Public License, Version 3.0, [LICENSE](LICENSE) or https://www.gnu.org/licenses/gpl-3.0.en.html

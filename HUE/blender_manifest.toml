@@ -4,7 +4,7 @@ id = "hue"
 version = "1.2.1"
 name = "HUE"
 tagline = "A set of tools to make vertex painting easier"
-maintainer = "Kai Fardreamer <tojynick@protonmail.com>"
+maintainer = "Fardreamer Labs <fardreamer.labs@protonmail.com>"
 type = "add-on"
 
 website = "https://github.com/Fardreamer-Labs/HUE"

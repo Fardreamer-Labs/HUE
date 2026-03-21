@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 
-id = "hue"
+id = "more_colors"
 version = "1.2.1"
 name = "HUE"
 tagline = "A set of tools to make vertex painting easier"

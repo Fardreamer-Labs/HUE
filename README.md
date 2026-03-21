@@ -3,12 +3,11 @@
 # 🖌️More Colors!
 
 A Blender add-on that makes working with vertex colors easier.
-
 ## ✨ Features
 
 - **Preview vertex colors (including alpha!)** from object and edit modes
 - Various tools, including **fill**, **randomize**, **gradient**, **smooth**, and **color by selection**
-- Full **edit-mode selection support** — paint only selected points, edges, or faces
+- Full **edit-mode selection support** - paint only selected points, edges, or faces
 - Supports editing different **color attributes**
 - **RGBA color masking**, modify only the channels you need
 - **Palette system** with customizable swatches shared across tools
@@ -17,7 +16,7 @@ A Blender add-on that makes working with vertex colors easier.
 ## 🔧 Installation Via Blender's Extensions
 
 1. Inside Blender go to **Edit** -> **Preferences** -> **Get Extensions**
-2. In the search box type **"More Colors!"**
+2. In the search box, type **"More Colors!"**
 3. Click **"Install"**
 4. Enjoy ✨
 
@@ -25,22 +24,22 @@ A Blender add-on that makes working with vertex colors easier.
 
 After installing the add-on, you can see it on the side panel (press **N** to open it). 
 
+### Vertex Colors Preview
+Allows you to choose how vertex colors are presented in the viewport. **Make sure it's not disabled before using any of the tools!**
+- **Off**, default viewport settings
+- **RGB**, overrides materials' color with vertex colors
+- **Alpha**, same as RGB, but allows you to view the alpha channel as a grayscale color
+
 ### Tools
 
 Contains all the tools the add-on has to offer.
 
 #### Fill Tool
-
-<img alt="Simple fill tool screenshot" src="./resources/documentation/simple_fill.png" width=550>
-
 It applies a **selected color** to the **selected object(s) or selected parts of the mesh** _(points, edges, or faces)_.
 
-Also includes a **palette system** — a visual swatch grid where you can store and pick colors. Palettes are shared Blender data, so you can reuse them across tools. You can **add**, **remove**, and **select** swatches from the grid.
+Also includes a **palette system** - a visual swatch grid where you can store and pick colors. Palettes are shared Blender data, so you can reuse them across tools. You can **add**, **remove**, and **select** swatches from the grid.
 
 #### Randomize Tool
-
-<img alt="Random color per element tool screenshot" src="./resources/documentation/random_color_per_element.png" width=550>
-
 Applies a **random color** to the _selected object(s)_. In edit mode, only the selected parts of the mesh are affected.
 
 **Generate Per Element**
@@ -64,15 +63,10 @@ Choose from three modes to generate random colors: **RGB**, **Hue**, and **Palet
 
 **Palette random colors** assigns randomly selected colors from a palette that you define. It might be useful if you want to use specific colors for the randomization.
 
-<img alt="Random color tool palette screenshot" src="./resources/documentation/random_color_per_element_palette.png" width=550>
-
 #### Gradient Tool
-
-<img alt="Color by position tool screenshot" src="./resources/documentation/color_by_position.png" width=550>
-
 Generates a **gradient** mapped through a **color ramp**, giving you full control over the final look. The color ramp lets you define any number of color stops, so you can create multi-color gradients, sharp transitions, or subtle blends. In edit mode, the gradient is applied only to selected geometry.
 
-There are six gradient sources to choose from:
+There are ten gradient sources to choose from:
 
 ##### Position
 Maps vertex position along a selected axis (**X**, **Y**, or **Z**, forward or reversed). You can choose between **local space** _(rotation affects the direction)_ or **world space** _(object rotation doesn't affect it)_.
@@ -90,7 +84,7 @@ Colors based on surface curvature — **concave** areas (creases, crevices) vs *
 Maps the **active vertex group** weights through the color ramp. Great for visualizing or converting weight paint data to vertex colors.
 
 ##### Dirty Vertex Colors
-An enhanced version of Blender's built-in dirty vertex colors. Computes **cavity/occlusion** per vertex based on how enclosed each vertex is by its neighbors, then maps the result through the **color ramp** — giving you far more control than Blender's grayscale-only built-in.
+An enhanced version of Blender's built-in dirty vertex colors. Computes **cavity/occlusion** per vertex based on how enclosed each vertex is by its neighbors, then maps the result through the **color ramp** - giving you far more control than Blender's grayscale-only built-in.
 
 Controls include:
 - **Highlight Angle** / **Dirt Angle** — angle thresholds that define where clean ends and dirty begins
@@ -98,16 +92,42 @@ Controls include:
 - **Dirty Only** — only affects concave areas, leaving convex areas untouched
 - **Normalize** — stretches results to use the full 0–1 range of the color ramp
 
-#### Smooth Tool
+##### Valence
+Number of edges connected to each vertex.
 
-Smooths vertex colors by **averaging with neighboring vertices**. Useful for softening hard edges between differently colored regions, or blending noisy results.
+##### Face Area
+Average area of adjacent faces per vertex.
+
+##### Edge Length Variance
+Variance of connected edge lengths per vertex.
+
+##### Face Quality
+Regularity of adjacent faces per vertex.
+
+#### Adjust Tool
+Has three methods of adjusting and post-processing existing colors.
+
+##### Smooth
+Smooths vertex colors by **averaging with neighboring vertices**. Useful for softening hard edges between differently colored regions or blending noisy results.
 
 - **Iterations** — number of smoothing passes (more = smoother)
 - **Factor** — blend strength per pass (0 = no change, 1 = full average)
 
 Respects the **color mask**, so you can smooth individual channels independently.
 
-#### Color By Selection Tool
+##### Color Adjustments
+Allows you to perform various post-processing operations with your colors, including:
+- **Levels**
+- **Brightness/Contrast**
+- **Hue/Saturation**
+- **Invert**
+- **Posterize**
+- **Layer Blend**
+
+##### Symmetrize
+Allows you to mirror vertex colors along an axis.
+
+#### Selection Tool
 
 _Only available in Edit Mode._
 
@@ -115,37 +135,39 @@ Colors geometry based on the current edit-mode selection: **selected** elements 
 
 Useful for quickly creating selection masks or ID maps directly from your edit-mode selections.
 
+#### Attribute Transfer Tool
+Allows you to transfer vertex colors from other objects. Colors can be sampled in three modes:
+- **Nearest Vertex**
+- **Nearest Surface**
+- **Raycast**
+
 ### Settings Section
 
-Contains various settings, including **display settings**, **global color settings**, and **color attribute settings**.
+Contains various settings, including **color mask settings** and **color attribute settings**.
 
-#### Display Settings
+#### Color Mask Settings
 
-With display settings, you can choose, how vertex colors will be displayed. You can view their **RGB** or **Alpha** channels. **Make sure it's not disabled before using any of the tools!**
+The add-on has two settings here: an **affected channels** and a **reset vertex colors button**.
 
-#### Global Color Settings
-
-The add-on has two settings here: a **color mask** and a **reset colors button**.
-
-With the color mask, you can restrict, _which RGBA channels are affected by add-on tools_. **Every channel is on by default**, which means colors are applied as usual.
+With the affected channels setting, you can restrict, _which RGBA channels are affected by the add-on tools_. **Every channel is on by default**, which means colors are applied as usual.
 But imagine you left only the red channel on. In this case, **only the red channel values will be modified**, and values on other channels **will not be affected**.
-Why do we need this? Well, you can use different color channels to store different information that will be used later _(for instance in shaders)_.
-As an example, your red channel might be a position gradient, your blue channel might be some kind of a mask, and so on.
+Why do we need this? Well, you can use different color channels to store different information that will be used later _(for instance, in shaders)_.
+As an example, your red channel might be a position gradient, your blue channel might be some kind of mask, and so on.
 
-#### Reset Color Button
+#### Reset Vertex Color Button
 
-A reset colors button just **sets all vertex colors to white**. In edit mode, it respects your current selection, so you can reset only the selected parts of your mesh.
+A reset colors button just **sets all vertex colors to white (alpha channel to 1)**. In edit mode, it respects your current selection, so you can reset only the selected parts of your mesh.
 
 #### Color Attributes Settings
-In this panel, you can select, **which color attribute will be affected by the tool**. If your object has no color attributes, the plugin **will create one automatically** for you!
+In this panel, you can select **which color attribute will be affected by the tool**. If your object has no color attributes, the plugin **will create one automatically** for you!
 
 ### About Section
 
-Contains general info about the plugin such as add-on _name_ and _version_, original author and current maintainer, as well as a _link to this documentation_.
+Contains general info about the plugin, such as add-on _name_ and _version_, original author and current maintainer, as well as a _link to this documentation_.
 
 ## ⚙️ Addon Preferences
 
-You can configure **startup defaults** for every tool in the addon preferences (**Edit** → **Preferences** → **Add-ons** → **More Colors!**). Settings include default colors, modes, angles, and more — all applied automatically when you open a file.
+You can configure **startup defaults** for every tool in the addon preferences (**Edit** → **Preferences** → **Add-ons** → **More Colors!**). Settings include default colors, modes, angles, and more - all applied automatically when you open a file.
 
 You can also configure a **default palette** with your preferred colors, which is automatically assigned to the Fill and Randomize palette pickers.
 
@@ -153,14 +175,14 @@ A **Keyboard Shortcuts** reference section lists all operators with their `bl_id
 
 ## ⚠️ Known Issues
 ### Alpha vertex display mode
-Since Blender doesn't have a built-in feature to display the alpha channel of vertex colors, I had to use a special material for that. When you enable alpha display mode, this material temporarily overrides all active object materials. If you have different materials assigned to various parts of your geometry, alpha display mode will reassign them, so be careful with that.
+Since Blender doesn't have a built-in feature to display the alpha channel of vertex colors, I had to use a special material for that. When you enable alpha display mode, this material temporarily overrides all active object materials. If you have different materials assigned to various parts of your geometry, the alpha display mode will reassign them, so be careful with that.
 
-Also, if you change an active object or color attribute, the material will not update automatically and you have to manually re-enable alpha display mode to see the updates.
+Also, if you change an active object or color attribute, the material will not update automatically, and you have to manually re-enable alpha display mode to see the updates.
 
 ### Color attribute domains
-Color attributes might have two domains: vertex and face corner. The vertex domain stores colors per point (for instance a cube has 8 points), while the face corner domain stores colors per vertex (a cube has 24 vertices, 3 per point). It sounds confusing, but the thing is a face corner domain gives you much more control over vertex colors, so I recommend using only it. 
+Color attributes might have two domains: vertex and face corner. The vertex domain stores colors per point (for instance, a cube has 8 points), while the face corner domain stores colors per vertex (a cube has 24 vertices, 3 per point). It sounds confusing, but the thing is, a face corner domain gives you much more control over vertex colors, so I recommend using only it. 
 
-Still, the plugin supports vertex domain, but some tools will be limited, for instance, you will lose the ability to choose the element random colors will be applied.
+Still, the plugin supports vertex domain, but some tools will be limited, for instance, you will lose the ability to choose the element, and random colors will be applied.
 
 ## 📃 License
 

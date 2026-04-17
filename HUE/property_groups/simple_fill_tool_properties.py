@@ -12,7 +12,7 @@ class SimpleFillToolProperties(PropertyGroup):
     selected_color: FloatVectorProperty(
         name="Color",
         description="Choose a color",
-        subtype="COLOR",
+        subtype="COLOR_GAMMA",
         default=(1, 1, 1, 1),
         min=0,
         max=1,

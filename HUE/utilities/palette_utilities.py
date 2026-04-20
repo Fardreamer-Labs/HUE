@@ -40,16 +40,13 @@ def get_color_icon(r, g, b):
         _preset_previews["main"] = bpy.utils.previews.new()
     pcoll = _preset_previews["main"]
 
-    rs = max(0.0, min(1.0, _linear_to_srgb(r)))
-    gs = max(0.0, min(1.0, _linear_to_srgb(g)))
-    bs = max(0.0, min(1.0, _linear_to_srgb(b)))
-    ri, gi, bi = int(rs * 255), int(gs * 255), int(bs * 255)
+    ri, gi, bi = int(r * 255), int(g * 255), int(b * 255)
     key = f"hue_{ri:03d}_{gi:03d}_{bi:03d}"
 
     if key not in pcoll:
         icon = pcoll.new(key)
         icon.icon_size = (_SWATCH_SIZE, _SWATCH_SIZE)
-        pixel = [rs, gs, bs, 1.0]
+        pixel = [r, g, b, 1.0]
         icon.icon_pixels_float = pixel * (_SWATCH_SIZE * _SWATCH_SIZE)
 
     return pcoll[key].icon_id

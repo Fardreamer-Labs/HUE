@@ -279,7 +279,7 @@ class HUEPreferences(AddonPreferences):
     # -- Fill defaults --
     default_fill_color: FloatVectorProperty(
         name="Default Color",
-        subtype="COLOR",
+        subtype="COLOR_GAMMA",
         default=(1.0, 1.0, 1.0, 1.0),
         min=0.0,
         max=1.0,
@@ -437,7 +437,7 @@ class HUEPreferences(AddonPreferences):
     # -- Selection defaults --
     default_selection_selected_color: FloatVectorProperty(
         name="Selected Color",
-        subtype="COLOR",
+        subtype="COLOR_GAMMA",
         default=(0.0, 0.8, 1.0, 1.0),
         min=0.0,
         max=1.0,
@@ -445,7 +445,7 @@ class HUEPreferences(AddonPreferences):
     )
     default_selection_unselected_color: FloatVectorProperty(
         name="Unselected Color",
-        subtype="COLOR",
+        subtype="COLOR_GAMMA",
         default=(0.1, 0.1, 0.1, 1.0),
         min=0.0,
         max=1.0,

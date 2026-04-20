@@ -36,7 +36,7 @@ _SHORTCUT_OPERATORS = [
 class DefaultPaletteColor(PropertyGroup):
     color: FloatVectorProperty(
         name="Color",
-        subtype="COLOR",
+        subtype="COLOR_GAMMA",
         default=(1.0, 1.0, 1.0),
         min=0.0,
         max=1.0,

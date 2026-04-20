@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "more_colors"
-version = "1.2.1"
+version = "1.2.2"
 name = "HUE"
 tagline = "A set of tools to make vertex painting easier"
 maintainer = "Fardreamer Labs <fardreamer.labs@protonmail.com>"

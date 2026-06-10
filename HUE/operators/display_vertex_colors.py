@@ -114,6 +114,9 @@ def _apply_alpha_display_material_to_active_mesh_object(context):
     obj = context.active_object
 
     if obj is not None and obj.type == "MESH":
+        # Save original per-face material indices before overwriting them
+        obj["hue_saved_material_indices"] = [poly.material_index for poly in obj.data.polygons]
+
         obj.data.materials.append(alpha_display_material)
 
         mat_index = obj.data.materials.find(material_name)
@@ -135,6 +138,14 @@ def _remove_alpha_display_material_from_all_mesh_objects(context):
             for slot in obj.material_slots:
                 if slot.material and slot.material.name == material_name:
                     obj.data.materials.pop(index=obj.material_slots.find(material_name))
+
+                    # Restore original per-face material indices saved before preview was applied
+                    saved = obj.get("hue_saved_material_indices")
+                    if saved is not None:
+                        for poly, idx in zip(obj.data.polygons, saved):
+                            poly.material_index = idx
+                        del obj["hue_saved_material_indices"]
+                    obj.data.update()
                     break
 
 

@@ -18,6 +18,7 @@ from .tools_panel import (
     color_adjustments_tool_panel,
     color_by_position_tool_panel,
     color_by_selection_tool_panel,
+    export_texture_tool_panel,
     random_color_tool_panel,
     simple_fill_tool_panel,
     smooth_tool_panel,
@@ -38,6 +39,7 @@ classes = [
     color_adjustments_tool_panel.HUE_PT_color_adjustments_tool_panel,
     symmetrize_tool_panel.HUE_PT_symmetrize_tool_panel,
     attribute_transfer_tool_panel.HUE_PT_attribute_transfer_tool_panel,
+    export_texture_tool_panel.HUE_PT_export_texture_tool_panel,
 
     settings_panel.HUE_PT_settings_panel,
     global_color_settings_panel.HUE_PT_global_color_settings_panel,

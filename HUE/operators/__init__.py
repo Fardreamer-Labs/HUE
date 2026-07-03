@@ -12,6 +12,7 @@ from . import (
     color_adjustments,
     color_by_selection,
     display_vertex_colors,
+    export_color_attribute,
     open_documentation,
     reset_vertex_colors,
     simple_fill,
@@ -50,6 +51,9 @@ classes = [
     attribute_transfer.HUE_OT_attribute_transfer,
 
     symmetrize_vertex_colors.HUE_OT_symmetrize_vertex_colors,
+
+    export_color_attribute.HUE_OT_make_texture,
+    export_color_attribute.HUE_OT_export_color_attribute,
 ]
 
 

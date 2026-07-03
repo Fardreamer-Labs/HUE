@@ -181,6 +181,16 @@ _SYMMETRIZE_DIRECTION_ITEMS = [
     ("NEGATIVE_TO_POSITIVE", "\u2212 to +", ""),
 ]
 
+_TEXTURE_COLOR_DEPTH_ITEMS = [
+    ("8", "8-bit", "256 levels per channel — smaller file size"),
+    ("16", "16-bit", "65536 levels per channel — recommended to avoid banding in smooth gradients"),
+]
+
+_TEXTURE_COLORSPACE_ITEMS = [
+    ("sRGB", "sRGB", "Standard color texture (albedo/tint)"),
+    ("Non-Color", "Non-Color", "Raw data texture (masks, blend weights). Skips color management on creation"),
+]
+
 
 # ---------------------------------------------------------------------------
 # Keyboard Shortcuts Modal
@@ -261,6 +271,7 @@ class HUEPreferences(AddonPreferences):
             ("GENERAL", "General", "Global defaults and palette"),
             ("PAINT", "Paint Tools", "Fill, Randomize, Gradient, and Selection defaults"),
             ("ADJUST", "Adjust Tools", "Smooth, Adjustments, Transfer, and Symmetrize defaults"),
+            ("EXPORT", "Export", "Make Texture / Export as PNG defaults"),
         ],
         default="GENERAL",
     )
@@ -275,6 +286,7 @@ class HUEPreferences(AddonPreferences):
     show_mask: BoolProperty(name="Color Mask Defaults", default=False)
     show_palette: BoolProperty(name="Default Palette", default=False)
     show_symmetrize: BoolProperty(name="Symmetrize Defaults", default=False)
+    show_make_texture: BoolProperty(name="Make Texture Defaults", default=False)
 
     # -- Fill defaults --
     default_fill_color: FloatVectorProperty(
@@ -461,6 +473,44 @@ class HUEPreferences(AddonPreferences):
     # -- Default palette --
     default_palette_colors: CollectionProperty(type=DefaultPaletteColor)
 
+    # -- Make Texture defaults --
+    default_texture_resolution_x: IntProperty(
+        name="Width",
+        default=1024,
+        min=64,
+        max=16384,
+    )
+    default_texture_resolution_y: IntProperty(
+        name="Height",
+        default=1024,
+        min=64,
+        max=16384,
+    )
+    default_texture_margin: IntProperty(
+        name="Margin",
+        default=16,
+        min=0,
+        max=64,
+    )
+    default_texture_color_depth: EnumProperty(
+        name="Color Depth",
+        items=_TEXTURE_COLOR_DEPTH_ITEMS,
+        default="16",
+    )
+    default_texture_colorspace: EnumProperty(
+        name="Color Space",
+        items=_TEXTURE_COLORSPACE_ITEMS,
+        default="sRGB",
+    )
+    default_texture_auto_unwrap: BoolProperty(
+        name="Auto Unwrap",
+        default=True,
+    )
+    default_texture_apply_material: BoolProperty(
+        name="Apply Material",
+        default=False,
+    )
+
     # -----------------------------------------------------------------------
     # Draw
     # -----------------------------------------------------------------------
@@ -472,6 +522,7 @@ class HUEPreferences(AddonPreferences):
         row.prop_enum(self, "active_tab", "GENERAL", icon="SETTINGS")
         row.prop_enum(self, "active_tab", "PAINT", icon="BRUSH_DATA")
         row.prop_enum(self, "active_tab", "ADJUST", icon="MODIFIER")
+        row.prop_enum(self, "active_tab", "EXPORT", icon="EXPORT")
         layout.separator(factor=0.5)
 
         if self.active_tab == "GENERAL":
@@ -567,6 +618,19 @@ class HUEPreferences(AddonPreferences):
                 box.prop(self, "default_symmetrize_axis")
                 box.prop(self, "default_symmetrize_direction")
                 box.prop(self, "default_symmetrize_threshold")
+
+        elif self.active_tab == "EXPORT":
+            self._draw_section_header(layout, "show_make_texture", "TEXTURE", "Make Texture Defaults")
+            if self.show_make_texture:
+                box = layout.box()
+                row = box.row(align=True)
+                row.prop(self, "default_texture_resolution_x")
+                row.prop(self, "default_texture_resolution_y")
+                box.prop(self, "default_texture_margin")
+                box.prop(self, "default_texture_color_depth")
+                box.prop(self, "default_texture_colorspace")
+                box.prop(self, "default_texture_auto_unwrap")
+                box.prop(self, "default_texture_apply_material")
 
     @staticmethod
     def _draw_section_header(layout, prop_name, icon, label):
@@ -666,6 +730,17 @@ def _apply_startup_defaults(_=None):
         mask_tool.global_color_mask_g = prefs.default_mask_g
         mask_tool.global_color_mask_b = prefs.default_mask_b
         mask_tool.global_color_mask_a = prefs.default_mask_a
+
+    # Make Texture
+    texture_tool = getattr(scene, "hue_export_texture_tool", None)
+    if texture_tool:
+        texture_tool.resolution_x = prefs.default_texture_resolution_x
+        texture_tool.resolution_y = prefs.default_texture_resolution_y
+        texture_tool.margin = prefs.default_texture_margin
+        texture_tool.color_depth = prefs.default_texture_color_depth
+        texture_tool.colorspace = prefs.default_texture_colorspace
+        texture_tool.auto_unwrap = prefs.default_texture_auto_unwrap
+        texture_tool.apply_material = prefs.default_texture_apply_material
 
 
 def get_default_palette_colors():

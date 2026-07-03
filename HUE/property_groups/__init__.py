@@ -11,6 +11,7 @@ from . import (
     color_by_position_tool_properties,
     color_by_selection_tool_properties,
     display_settings_properties,
+    export_texture_tool_properties,
     global_color_settings_properties,
     random_color_tool_properties,
     simple_fill_tool_properties,
@@ -29,6 +30,7 @@ classes = [
     color_adjustments_tool_properties.ColorAdjustmentsToolProperties,
     attribute_transfer_tool_properties.AttributeTransferToolProperties,
     symmetrize_tool_properties.SymmetrizeToolProperties,
+    export_texture_tool_properties.ExportTextureToolProperties,
 ]
 
 
@@ -56,6 +58,8 @@ def register():
         type=attribute_transfer_tool_properties.AttributeTransferToolProperties)
     bpy.types.Scene.hue_symmetrize_tool = bpy.props.PointerProperty(
         type=symmetrize_tool_properties.SymmetrizeToolProperties)
+    bpy.types.Scene.hue_export_texture_tool = bpy.props.PointerProperty(
+        type=export_texture_tool_properties.ExportTextureToolProperties)
 
 
 def unregister():
@@ -72,3 +76,4 @@ def unregister():
     del bpy.types.Scene.hue_color_adjustments_tool
     del bpy.types.Scene.hue_attribute_transfer_tool
     del bpy.types.Scene.hue_symmetrize_tool
+    del bpy.types.Scene.hue_export_texture_tool

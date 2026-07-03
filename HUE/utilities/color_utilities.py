@@ -196,15 +196,15 @@ def get_selected_color_indices(obj, select_mode, domain):
     indices = set()
     if select_mode[0] or select_mode[1]:
         vert_to_loops = build_vertex_loop_map(obj)
-    if select_mode[0]:
-        for vert in obj.data.vertices:
-            if vert.select:
-                indices.update(vert_to_loops.get(vert.index, []))
-    if select_mode[1]:
-        for edge in obj.data.edges:
-            if edge.select:
-                for vi in edge.vertices:
-                    indices.update(vert_to_loops.get(vi, []))
+        if select_mode[0]:
+            for vert in obj.data.vertices:
+                if vert.select:
+                    indices.update(vert_to_loops.get(vert.index, []))
+        if select_mode[1]:
+            for edge in obj.data.edges:
+                if edge.select:
+                    for vi in edge.vertices:
+                        indices.update(vert_to_loops.get(vi, []))
     if select_mode[2]:
         for poly in obj.data.polygons:
             if poly.select:

@@ -44,7 +44,9 @@ class BaseColorOperator(BaseOperator):
             return
         if is_vertex_color_visible(context):
             return
-        bpy.app.timers.register(
-            lambda: bpy.ops.hue.visibility_warning('INVOKE_DEFAULT'),
-            first_interval=0,
-        )
+
+        def _fire_visibility_warning():
+            bpy.ops.hue.visibility_warning('INVOKE_DEFAULT')
+            return None  # bpy.app.timers callbacks must return None or a float, never an operator result
+
+        bpy.app.timers.register(_fire_visibility_warning, first_interval=0)
